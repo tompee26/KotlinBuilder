@@ -6,6 +6,7 @@ import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import com.squareup.kotlinpoet.metadata.toImmutableKmClass
 import com.tompee.kotlinbuilder.annotations.Builder
 import com.tompee.kotlinbuilder.annotations.Optional
+import com.tompee.kotlinbuilder.annotations.SetterName
 import com.tompee.kotlinbuilder.processor.models.Parameter
 import java.io.File
 import javax.annotation.processing.ProcessingEnvironment
@@ -67,18 +68,15 @@ internal class BuilderGenerator(
      */
     private val outputClassSpec by lazy { buildClassSpec() }
 
+    /**
+     * Setter methods
+     */
+    private val setterMethods by lazy { generateBuilderMethods() }
 
-    private val kotlinClassType = (element as TypeElement).toImmutableKmClass()
-
-
-//    private val builderType = ClassName(packageName, className)
-//
-//    private val classSpec = TypeSpec.classBuilder(className)
-//    private val fileSpec = FileSpec.builder(packageName, className)
-
-    init {
-        buildConstructor()
-    }
+    /**
+     * Build method
+     */
+    private val buildMethod by lazy { createBuildMethod() }
 
     /**
      * Generates the builder class name from the annotation if available
@@ -109,7 +107,11 @@ internal class BuilderGenerator(
          * Now we use the java constructor to check for annotations
          */
         val parameters = javaConstructor.parameters.map {
-            Parameter(it.simpleName.toString(), optional = it.getAnnotation(Optional::class.java))
+            Parameter(
+                it.simpleName.toString(),
+                setter = it.getAnnotation(SetterName::class.java),
+                optional = it.getAnnotation(Optional::class.java)
+            )
         }
 
         /**
@@ -207,7 +209,27 @@ internal class BuilderGenerator(
     /**
      * Creates the builder methods from the optional arguments
      */
-    private fun generateBuilderMethods() {
+    private fun generateBuilderMethods(): List<FunSpec> {
+        return parameterList.map {
+            val name = it.setter?.name ?: it.name
+            val providerParamType =
+                LambdaTypeName.get(builderClassName, returnType = it.getTypeOrFail())
+            FunSpec.builder(name)
+                .addParameter(ParameterSpec.builder("provider", providerParamType).build())
+                .returns(builderClassName)
+                .addStatement("return apply { ${it.name} = provider()}")
+                .build()
+        }
+    }
+
+    /**
+     * Creates the build method
+     */
+    private fun createBuildMethod(): FunSpec {
+        return FunSpec.builder("build")
+            .returns(inputClassName)
+            .addStatement("return $inputClassName(${parameterList.joinToString(separator = ", ") { it.name }})")
+            .build()
     }
 
     /**
@@ -226,6 +248,8 @@ internal class BuilderGenerator(
                 .mutable()
             classSpecBuilder.addProperty(propertySpec.build())
         }
+        setterMethods.forEach { classSpecBuilder.addFunction(it) }
+        classSpecBuilder.addFunction(buildMethod)
         return classSpecBuilder.build()
     }
 
