@@ -8,9 +8,13 @@ targetCompatibility = JavaVersion.VERSION_1_7
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     implementation project(':annotations')
 
     implementation 'com.squareup:kotlinpoet:1.4.1'
+    implementation 'com.squareup:kotlinpoet-metadata:1.4.1'
+    implementation 'com.squareup:kotlinpoet-metadata-specs:1.4.1'
+    implementation 'com.squareup:kotlinpoet-classinspector-reflective:1.4.1'
     implementation "com.google.auto.service:auto-service:1.0-rc6"
     kapt "com.google.auto.service:auto-service:1.0-rc6"
 }
