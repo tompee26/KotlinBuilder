@@ -110,7 +110,7 @@ internal class BuilderGenerator(
         ) {
             when {
                 parameter.isNullable() -> {
-                    buildSpecBuilder.addStatement("val ${parameter.name} : ${parameter.type}? = null")
+                    buildSpecBuilder.addStatement("val ${parameter.name} : ${parameter.type} = null")
                 }
                 parameter.withGenerator() -> {
                     val typeName = parameter.getProvider()

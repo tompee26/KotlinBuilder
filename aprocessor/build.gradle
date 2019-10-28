@@ -1,9 +1,25 @@
 apply plugin: 'java-library'
 apply plugin: 'kotlin'
 apply plugin: 'kotlin-kapt'
+apply plugin: 'com.novoda.bintray-release'
 
 sourceCompatibility = JavaVersion.VERSION_1_7
 targetCompatibility = JavaVersion.VERSION_1_7
+
+publish {
+
+    def groupProjectID = 'com.tompee.kotlinbuilder.processor'
+    def artifactProjectID = 'kotlinbuilder.processor'
+    def publishVersionID = project.publishVersion
+
+    userOrg = 'tompee26'
+    repoName = 'Android'
+    groupId = groupProjectID
+    artifactId = artifactProjectID
+    publishVersion = publishVersionID
+    desc = 'Annotation processor package for Kotlin Builder'
+    website = 'https://github.com/tompee26/KotlinBuilder'
+}
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
