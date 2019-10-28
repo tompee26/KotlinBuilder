@@ -1,8 +1,10 @@
 package com.tompee.kotlinbuilder.annotations
 
 /**
- * Customizes the setter method name. If not set, the default parameter name is used
+ * Customizes the setter method name
+ *
+ * @property name setter name
  */
 @Retention(AnnotationRetention.SOURCE)
 @Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class SetterName(val name: String = "")
+annotation class Setter(val name: String)

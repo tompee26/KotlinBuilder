@@ -1,12 +1,11 @@
 package com.tompee.kotlinbuilder.annotations
 
-/**
- * Default value provider. Optional values always require a default value.
- */
-interface Provider<T> {
+import com.tompee.kotlinbuilder.annotations.types.DefaultValueProvider
+import kotlin.reflect.KClass
 
-    /**
-     * Returns the default value
-     */
-    fun get(): T
-}
+/**
+ * Allows an optional parameter to provide an implementation of a default value provider.
+ *
+ * @property provider default value provider type
+ */
+annotation class Provider(val provider: KClass<out DefaultValueProvider<*>>)

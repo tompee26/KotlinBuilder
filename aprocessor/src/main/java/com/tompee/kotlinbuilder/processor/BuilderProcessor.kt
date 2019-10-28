@@ -2,6 +2,9 @@ package com.tompee.kotlinbuilder.processor
 
 import com.google.auto.service.AutoService
 import com.tompee.kotlinbuilder.annotations.Builder
+import com.tompee.kotlinbuilder.annotations.Nullable
+import com.tompee.kotlinbuilder.annotations.Optional
+import com.tompee.kotlinbuilder.annotations.Provider
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.Element
@@ -17,7 +20,12 @@ class BuilderProcessor : AbstractProcessor() {
     }
 
     override fun getSupportedAnnotationTypes(): MutableSet<String> {
-        return mutableSetOf(Builder::class.java.name)
+        return mutableSetOf(
+            Builder::class.java.name,
+            Optional::class.java.name,
+            Nullable::class.java.name,
+            Provider::class.java.name
+        )
     }
 
     override fun getSupportedSourceVersion(): SourceVersion = SourceVersion.latest()

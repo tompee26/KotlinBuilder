@@ -11,6 +11,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         person()
+        address()
     }
 
     private fun person() {
@@ -22,5 +23,8 @@ class MainActivity : AppCompatActivity() {
         builder.setFullName { "xyz" }
         Log.i("MainActivity", "Person: $person")
         Log.i("MainActivity", "Person from builder: ${builder.build()}")
+    }
+
+    private fun address() {
     }
 }

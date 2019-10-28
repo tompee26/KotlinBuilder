@@ -5,17 +5,11 @@ import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import com.squareup.kotlinpoet.metadata.toImmutableKmClass
 import com.tompee.kotlinbuilder.annotations.Builder
-import com.tompee.kotlinbuilder.annotations.Optional
-import com.tompee.kotlinbuilder.annotations.SetterName
 import com.tompee.kotlinbuilder.processor.models.Parameter
 import java.io.File
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
-import javax.lang.model.element.ElementKind
-import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
-import javax.lang.model.type.MirroredTypeException
-import javax.lang.model.type.TypeMirror
 
 
 @UseExperimental(KotlinPoetMetadataPreview::class)
@@ -51,7 +45,7 @@ internal class BuilderGenerator(
     /**
      * Constructor parameter list
      */
-    private val parameterList by lazy { getParameters() }
+    private val parameterList by lazy { Parameter.parse(element as TypeElement, inputTypeSpec) }
 
     /**
      * Output builder constructor
@@ -95,42 +89,13 @@ internal class BuilderGenerator(
     }
 
     /**
-     * Parses the constructor parameters. We will rely on manually parsing the primary constructor
-     * as input type spec cannot determine it
-     */
-    private fun getParameters(): List<Parameter> {
-        val javaConstructor =
-            element.enclosedElements.firstOrNull { it.kind == ElementKind.CONSTRUCTOR } as? ExecutableElement
-                ?: throw IllegalStateException("No constructor found for ${element.simpleName}")
-
-        /**
-         * Now we use the java constructor to check for annotations
-         */
-        val parameters = javaConstructor.parameters.map {
-            Parameter(
-                it.simpleName.toString(),
-                setter = it.getAnnotation(SetterName::class.java),
-                optional = it.getAnnotation(Optional::class.java)
-            )
-        }
-
-        /**
-         * Now we will need the actual kotlin type of the parameter
-         */
-        inputTypeSpec.propertySpecs.forEach { propertySpec ->
-            parameters.find { it.name == propertySpec.name }?.apply { typeName = propertySpec.type }
-        }
-        return parameters
-    }
-
-    /**
      * Builds the constructors using the parameter list
      */
     private fun buildConstructor(): FunSpec {
         val constructor = FunSpec.constructorBuilder()
             .addModifiers(KModifier.PRIVATE)
         parameterList.forEach {
-            constructor.addParameter(it.name, it.getTypeOrFail(), KModifier.PRIVATE)
+            constructor.addParameter(it.name, it.type, KModifier.PRIVATE)
         }
         return constructor.build()
     }
@@ -141,17 +106,25 @@ internal class BuilderGenerator(
     private fun createCompanionObject(): TypeSpec {
         fun createProviderEvaluationStatement(
             buildSpecBuilder: FunSpec.Builder,
-            name: String,
-            type: TypeName
+            parameter: Parameter
         ) {
-            buildSpecBuilder.addStatement("val $name = $type().get()")
+            when {
+                parameter.isNullable() -> {
+                    buildSpecBuilder.addStatement("val ${parameter.name} : ${parameter.type}? = null")
+                }
+                parameter.withGenerator() -> {
+                    val typeName = parameter.getProvider()
+                    buildSpecBuilder.addStatement("val ${parameter.name} = $typeName().get()")
+                }
+                else -> throw IllegalStateException("Class: ${inputClassName}, Parameter: ${parameter.name}. Optional parameter must define at least one method to determine default value")
+            }
         }
 
         //region First invoke overload
         val createOverload = FunSpec.builder("invoke")
             .addModifiers(KModifier.INTERNAL, KModifier.OPERATOR)
-        parameterList.filterNot { it.isOptional() }.forEach {
-            createOverload.addParameter(it.name, it.getTypeOrFail())
+        parameterList.filterNot { it.isOptional }.forEach {
+            createOverload.addParameter(it.name, it.type)
         }
         // Need the builder type here. Just gonna use the name here
         createOverload.addParameter(
@@ -160,10 +133,7 @@ internal class BuilderGenerator(
         ).returns(inputClassName)
 
         val createParamNames = parameterList.map {
-            if (it.isOptional()) {
-                val typeName = it.optional!!.getProvider().asTypeName()
-                createProviderEvaluationStatement(createOverload, it.name, typeName)
-            }
+            if (it.isOptional) createProviderEvaluationStatement(createOverload, it)
             it.name
         }
 
@@ -179,17 +149,14 @@ internal class BuilderGenerator(
         // regionFirst invoke overload
         val builderOverload = FunSpec.builder("invoke")
             .addModifiers(KModifier.INTERNAL, KModifier.OPERATOR)
-        parameterList.filterNot { it.isOptional() }.forEach {
-            builderOverload.addParameter(it.name, it.getTypeOrFail())
+        parameterList.filterNot { it.isOptional }.forEach {
+            builderOverload.addParameter(it.name, it.type)
         }
         // Need the builder type here. Just gonna use the name here
         builderOverload.returns(builderClassName)
 
         val builderParamNames = parameterList.map {
-            if (it.isOptional()) {
-                val typeName = it.optional!!.getProvider().asTypeName()
-                createProviderEvaluationStatement(builderOverload, it.name, typeName)
-            }
+            if (it.isOptional) createProviderEvaluationStatement(builderOverload, it)
             it.name
         }
 
@@ -213,7 +180,7 @@ internal class BuilderGenerator(
         return parameterList.map {
             val name = it.setter?.name ?: it.name
             val providerParamType =
-                LambdaTypeName.get(builderClassName, returnType = it.getTypeOrFail())
+                LambdaTypeName.get(builderClassName, returnType = it.type)
             FunSpec.builder(name)
                 .addParameter(ParameterSpec.builder("provider", providerParamType).build())
                 .returns(builderClassName)
@@ -243,7 +210,7 @@ internal class BuilderGenerator(
             .primaryConstructor(builderConstructor)
             .addType(outputCompanionObject)
         parameterList.forEach {
-            val propertySpec = PropertySpec.builder(it.name, it.getTypeOrFail())
+            val propertySpec = PropertySpec.builder(it.name, it.type)
                 .initializer(it.name)
                 .mutable()
             classSpecBuilder.addProperty(propertySpec.build())
@@ -260,15 +227,5 @@ internal class BuilderGenerator(
             .build()
         val kaptKotlinGeneratedDir = env.options[BuilderProcessor.KAPT_KOTLIN_GENERATED_OPTION_NAME]
         fileSpec.writeTo(File(kaptKotlinGeneratedDir, "$name.kt"))
-    }
-
-    private fun Optional.getProvider(): TypeMirror {
-        try {
-            provider
-        } catch (mte: MirroredTypeException) {
-            return mte.typeMirror
-        }
-
-        throw IllegalStateException("Provider type cannot be determined")
     }
 }

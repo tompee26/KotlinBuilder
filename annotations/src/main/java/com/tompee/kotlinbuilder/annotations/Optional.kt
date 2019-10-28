@@ -1,11 +1,10 @@
 package com.tompee.kotlinbuilder.annotations
 
-import kotlin.reflect.KClass
-
 /**
- * Marks a property as an optional parameter. An optional parameter needs to provide
- * an implementation of [Provider] as the default value provider.
+ * Marks a property as an optional parameter. Optional parameters are parameters whose values
+ * are not required to be set when instantiating the builder. Optional parameters have many types
+ * and may require additional annotations to deduce the method of specifying the default value.
  */
-@Retention(AnnotationRetention.BINARY)
+@Retention(AnnotationRetention.SOURCE)
 @Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class Optional(val provider: KClass<out Provider<*>>)
+annotation class Optional
