@@ -1,25 +1,13 @@
 package com.tompee.kotlinbuilder.models
 
 import com.tompee.kotlinbuilder.annotations.Builder
-import com.tompee.kotlinbuilder.annotations.Optional
-import com.tompee.kotlinbuilder.annotations.Provider
+import com.tompee.kotlinbuilder.annotations.SetterName
 
-class OptionalProvider : Provider<List<Int>> {
-    override fun get() = listOf(1)
-}
+@Builder("PersonFactory")
+data class Person(
 
-data class Address(
-    val street: String,
-    val city: String
-)
-
-@Builder
-class Person(
+    @SetterName("setFullName")
     val name: String,
-    val address: Address,
-    @Optional(OptionalProvider::class) val telephone: List<Int>,
-    @Optional(OptionalProvider::class) val optional: List<Int>
-) {
 
-    val outsideVariable = 12
-}
+    val age: Int
+)
