@@ -27,6 +27,10 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     implementation project(':annotations')
 
+    def incap = "0.2"
+    compileOnly "net.ltgt.gradle.incap:incap:$incap"
+    kapt "net.ltgt.gradle.incap:incap-processor:$incap"
+
     implementation 'com.squareup:kotlinpoet:1.4.1'
     implementation 'com.squareup:kotlinpoet-metadata:1.4.1'
     implementation 'com.squareup:kotlinpoet-metadata-specs:1.4.1'
