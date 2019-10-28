@@ -7,8 +7,8 @@ targetCompatibility = JavaVersion.VERSION_1_7
 
 publish {
 
-    def groupProjectID = 'com.tompee.kotlinbuilder.annotations'
-    def artifactProjectID = 'kotlinbuilder.annotations'
+    def groupProjectID = 'com.tompee.kotlinbuilder'
+    def artifactProjectID = 'annotations'
     def publishVersionID = project.publishVersion
 
     userOrg = 'tompee26'
