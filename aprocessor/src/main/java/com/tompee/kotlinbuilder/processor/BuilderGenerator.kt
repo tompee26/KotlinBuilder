@@ -65,7 +65,7 @@ internal class BuilderGenerator(
     /**
      * Setter methods
      */
-    private val setterMethods by lazy { generateBuilderMethods() }
+    private val setterMethods by lazy { parameterList.map { it.toBuilderFunSpec(builderClassName) } }
 
     /**
      * Build method
@@ -94,9 +94,7 @@ internal class BuilderGenerator(
     private fun buildConstructor(): FunSpec {
         val constructor = FunSpec.constructorBuilder()
             .addModifiers(KModifier.PRIVATE)
-        parameterList.forEach {
-            constructor.addParameter(it.name, it.type, KModifier.PRIVATE)
-        }
+            .addParameters(parameterList.map { it.toCtrParamSpec() })
         return constructor.build()
     }
 
@@ -104,66 +102,38 @@ internal class BuilderGenerator(
      * Creates the companion object with a single build function that accepts the mandatory arguments
      */
     private fun createCompanionObject(): TypeSpec {
-        fun createProviderEvaluationStatement(
-            buildSpecBuilder: FunSpec.Builder,
-            parameter: Parameter
-        ) {
-            when {
-                parameter.isNullable() -> {
-                    buildSpecBuilder.addStatement("val ${parameter.name} : ${parameter.type} = null")
-                }
-                parameter.withGenerator() -> {
-                    val typeName = parameter.getProvider()
-                    buildSpecBuilder.addStatement("val ${parameter.name} = $typeName().get()")
-                }
-                else -> throw IllegalStateException("Class: ${inputClassName}, Parameter: ${parameter.name}. Optional parameter must define at least one method to determine default value")
-            }
-        }
-
         //region First invoke overload
         val createOverload = FunSpec.builder("invoke")
             .addModifiers(KModifier.INTERNAL, KModifier.OPERATOR)
-        parameterList.filterNot { it.isOptional }.forEach {
-            createOverload.addParameter(it.name, it.type)
-        }
-        // Need the builder type here. Just gonna use the name here
-        createOverload.addParameter(
-            "builderInit",
-            LambdaTypeName.get(builderClassName, returnType = Unit::class.java.asTypeName())
-        ).returns(inputClassName)
+            .returns(inputClassName)
+            .addParameters(parameterList.filterNot { it.isOptional() }.map { it.toInvokeParamSpec() })
+            .addParameter(
+                "builderInit",
+                LambdaTypeName.get(builderClassName, returnType = Unit::class.java.asTypeName())
+            )
 
-        val createParamNames = parameterList.map {
-            if (it.isOptional) createProviderEvaluationStatement(createOverload, it)
-            it.name
-        }
+        parameterList.filter { it.isOptional() }
+            .forEach { createOverload.addStatement(it.createInitializeStatement()) }
 
-        createOverload.addStatement(
-            "val builder = ${builderClassName}(${createParamNames.joinToString(
-                separator = ", "
-            )})"
-        )
-        createOverload.addStatement("builderInit(builder)")
-        createOverload.addStatement("return builder.build()")
+        createOverload
+            .addStatement(
+                "val builder = ${builderClassName}(${parameterList.joinToString(separator = ", ") { it.name }})"
+            )
+            .addStatement("builderInit(builder)")
+            .addStatement("return builder.build()")
         //endregion
 
         // regionFirst invoke overload
         val builderOverload = FunSpec.builder("invoke")
             .addModifiers(KModifier.INTERNAL, KModifier.OPERATOR)
-        parameterList.filterNot { it.isOptional }.forEach {
-            builderOverload.addParameter(it.name, it.type)
-        }
-        // Need the builder type here. Just gonna use the name here
-        builderOverload.returns(builderClassName)
+            .returns(builderClassName)
+            .addParameters(parameterList.filterNot { it.isOptional() }.map { it.toInvokeParamSpec() })
 
-        val builderParamNames = parameterList.map {
-            if (it.isOptional) createProviderEvaluationStatement(builderOverload, it)
-            it.name
-        }
+        parameterList.filter { it.isOptional() }
+            .forEach { builderOverload.addStatement(it.createInitializeStatement()) }
 
         builderOverload.addStatement(
-            "return ${builderClassName}(${builderParamNames.joinToString(
-                separator = ", "
-            )})"
+            "return ${builderClassName}(${parameterList.joinToString(separator = ", ") { it.name }})"
         )
         //endregion
 
@@ -174,25 +144,18 @@ internal class BuilderGenerator(
     }
 
     /**
-     * Creates the builder methods from the optional arguments
-     */
-    private fun generateBuilderMethods(): List<FunSpec> {
-        return parameterList.map {
-            val name = it.setter?.name ?: it.name
-            val providerParamType =
-                LambdaTypeName.get(builderClassName, returnType = it.type)
-            FunSpec.builder(name)
-                .addParameter(ParameterSpec.builder("provider", providerParamType).build())
-                .returns(builderClassName)
-                .addStatement("return apply { ${it.name} = provider()}")
-                .build()
-        }
-    }
-
-    /**
      * Creates the build method
      */
     private fun createBuildMethod(): FunSpec {
+        /**
+         * Right now there is no way to pass nullable arguments to non-nullable optional parameters
+         * so we will generate all overloads
+         */
+//        val defaultParameter = parameterList.filter { it.isDefault() }.toTypedArray()
+//        for (index in 0 until defaultParameter.count()) {
+//
+//        }
+
         return FunSpec.builder("build")
             .returns(inputClassName)
             .addStatement("return $inputClassName(${parameterList.joinToString(separator = ", ") { it.name }})")
@@ -209,14 +172,9 @@ internal class BuilderGenerator(
         val classSpecBuilder = TypeSpec.classBuilder(className)
             .primaryConstructor(builderConstructor)
             .addType(outputCompanionObject)
-        parameterList.forEach {
-            val propertySpec = PropertySpec.builder(it.name, it.type)
-                .initializer(it.name)
-                .mutable()
-            classSpecBuilder.addProperty(propertySpec.build())
-        }
-        setterMethods.forEach { classSpecBuilder.addFunction(it) }
-        classSpecBuilder.addFunction(buildMethod)
+            .addProperties(parameterList.map { it.toPropertySpec() })
+            .addFunctions(setterMethods)
+            .addFunction(buildMethod)
         return classSpecBuilder.build()
     }
 
