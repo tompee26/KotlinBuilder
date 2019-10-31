@@ -3,7 +3,7 @@ package com.tompee.kotlinbuilder.models
 import com.tompee.kotlinbuilder.annotations.*
 import com.tompee.kotlinbuilder.annotations.types.DefaultValueProvider
 
-@Builder
+@KBuilder
 internal data class Address(
     @Optional
     @Default

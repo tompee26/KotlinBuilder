@@ -53,8 +53,8 @@ internal abstract class Parameter(
                     when {
                         it.getAnnotation(Nullable::class.java) != null -> NullableParameter.Builder()
                         it.getAnnotation(Default::class.java) != null -> DefaultParameter.Builder()
-                        it.getAnnotation(Provider::class.java) != null -> ProviderParameter.Builder(
-                            it.getAnnotation(Provider::class.java)
+                        it.getAnnotation(ValueProvider::class.java) != null -> ProviderParameter.Builder(
+                            it.getAnnotation(ValueProvider::class.java)
                         )
                         else -> throw IllegalStateException("Unsupported optional parameter: ${it.simpleName}")
                     }

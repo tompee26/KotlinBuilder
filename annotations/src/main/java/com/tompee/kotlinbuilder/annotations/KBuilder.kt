@@ -8,4 +8,4 @@ package com.tompee.kotlinbuilder.annotations
  */
 @Retention(AnnotationRetention.SOURCE)
 @Target(AnnotationTarget.CLASS)
-annotation class Builder(val name: String = "")
+annotation class KBuilder(val name: String = "")

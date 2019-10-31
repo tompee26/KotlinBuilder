@@ -3,7 +3,7 @@ package com.tompee.kotlinbuilder.processor.models
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
-import com.tompee.kotlinbuilder.annotations.Provider
+import com.tompee.kotlinbuilder.annotations.ValueProvider
 import com.tompee.kotlinbuilder.annotations.Setter
 import javax.lang.model.type.MirroredTypeException
 import javax.lang.model.type.TypeMirror
@@ -14,24 +14,24 @@ import javax.lang.model.type.TypeMirror
  * @property name actual parameter name
  * @property propertySpec property spec
  * @property setter optional setter name annotation
- * @property provider provider information
+ * @property valueProvider valueProvider information
  */
 internal data class ProviderParameter(
     override val name: String,
     override val propertySpec: PropertySpec,
     override val setter: Setter?,
-    val provider: Provider
+    val valueProvider: ValueProvider
 ) : Parameter(name, propertySpec, setter) {
 
     class Builder(
-        private val provider: Provider,
+        private val valueProvider: ValueProvider,
         name: String = "",
         propertySpec: PropertySpec? = null,
         setter: Setter? = null
     ) : Parameter.Builder(name, propertySpec, setter) {
 
         override fun build(): Parameter {
-            return ProviderParameter(name, propertySpec!!, setter, provider)
+            return ProviderParameter(name, propertySpec!!, setter, valueProvider)
         }
     }
 
@@ -69,7 +69,7 @@ internal data class ProviderParameter(
 
     private fun getProvider(): TypeMirror {
         try {
-            provider.provider
+            valueProvider.provider
         } catch (mte: MirroredTypeException) {
             return mte.typeMirror
         }

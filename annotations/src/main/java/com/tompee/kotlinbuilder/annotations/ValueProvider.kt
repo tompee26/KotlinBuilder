@@ -8,4 +8,4 @@ import kotlin.reflect.KClass
  *
  * @property provider default value provider type
  */
-annotation class Provider(val provider: KClass<out DefaultValueProvider<*>>)
+annotation class ValueProvider(val provider: KClass<out DefaultValueProvider<*>>)

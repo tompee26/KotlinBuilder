@@ -5,7 +5,7 @@ import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import com.squareup.kotlinpoet.metadata.toImmutableKmClass
-import com.tompee.kotlinbuilder.annotations.Builder
+import com.tompee.kotlinbuilder.annotations.KBuilder
 import com.tompee.kotlinbuilder.processor.models.DefaultParameter
 import com.tompee.kotlinbuilder.processor.models.Parameter
 import java.io.File
@@ -20,9 +20,9 @@ internal class BuilderGenerator(
     private val element: Element
 ) {
     /**
-     * Builder class annotation instance
+     * KBuilder class annotation instance
      */
-    private val annotation = element.getAnnotation(Builder::class.java)
+    private val annotation = element.getAnnotation(KBuilder::class.java)
 
     /**
      * Package name

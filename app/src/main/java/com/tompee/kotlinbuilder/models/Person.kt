@@ -1,9 +1,9 @@
 package com.tompee.kotlinbuilder.models
 
-import com.tompee.kotlinbuilder.annotations.Builder
+import com.tompee.kotlinbuilder.annotations.KBuilder
 import com.tompee.kotlinbuilder.annotations.Setter
 
-@Builder("PersonFactory")
+@KBuilder("PersonFactory")
 data class Person(
 
     @Setter("setFullName")

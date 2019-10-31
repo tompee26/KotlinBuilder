@@ -1,10 +1,10 @@
 package com.tompee.kotlinbuilder.processor
 
 import com.google.auto.service.AutoService
-import com.tompee.kotlinbuilder.annotations.Builder
+import com.tompee.kotlinbuilder.annotations.KBuilder
 import com.tompee.kotlinbuilder.annotations.Nullable
 import com.tompee.kotlinbuilder.annotations.Optional
-import com.tompee.kotlinbuilder.annotations.Provider
+import com.tompee.kotlinbuilder.annotations.ValueProvider
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessor
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType
 import javax.annotation.processing.*
@@ -24,22 +24,22 @@ class BuilderProcessor : AbstractProcessor() {
 
     override fun getSupportedAnnotationTypes(): MutableSet<String> {
         return mutableSetOf(
-            Builder::class.java.name,
+            KBuilder::class.java.name,
             Optional::class.java.name,
             Nullable::class.java.name,
-            Provider::class.java.name
+            ValueProvider::class.java.name
         )
     }
 
     override fun getSupportedSourceVersion(): SourceVersion = SourceVersion.latest()
 
     override fun process(set: MutableSet<out TypeElement>?, env: RoundEnvironment?): Boolean {
-        env?.getElementsAnnotatedWith(Builder::class.java)?.forEach(this::generate)
+        env?.getElementsAnnotatedWith(KBuilder::class.java)?.forEach(this::generate)
         return true
     }
 
     /**
-     * Generates a Builder class from the element
+     * Generates a KBuilder class from the element
      */
     private fun generate(element: Element) {
         BuilderGenerator(processingEnv, element).generate()
