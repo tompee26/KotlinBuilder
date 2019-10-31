@@ -11,7 +11,15 @@ data class Address(
 
     @Optional
     @Default
-    val town: String,
+    val town: String = "",
+
+    @Optional
+    @Default
+    val city: String = "",
+
+    @Optional
+    @Default
+    val province: String = "",
 
     @Optional
     @Provider(StateDefaultValueProvider::class)

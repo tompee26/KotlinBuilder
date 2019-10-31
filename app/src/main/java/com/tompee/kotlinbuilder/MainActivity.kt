@@ -3,6 +3,7 @@ package com.tompee.kotlinbuilder
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import com.tompee.kotlinbuilder.models.AddressBuilder
 import com.tompee.kotlinbuilder.models.PersonFactory
 
 class MainActivity : AppCompatActivity() {
@@ -26,5 +27,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun address() {
+        val address = AddressBuilder() {
+            province { "province" }
+        }
+        Log.i("MainActivity", "Address: $address")
     }
 }

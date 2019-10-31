@@ -1,10 +1,12 @@
 package com.tompee.kotlinbuilder.processor
 
+import com.marcinmoskala.math.powerset
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import com.squareup.kotlinpoet.metadata.toImmutableKmClass
 import com.tompee.kotlinbuilder.annotations.Builder
+import com.tompee.kotlinbuilder.processor.models.DefaultParameter
 import com.tompee.kotlinbuilder.processor.models.Parameter
 import java.io.File
 import javax.annotation.processing.ProcessingEnvironment
@@ -147,19 +149,34 @@ internal class BuilderGenerator(
      * Creates the build method
      */
     private fun createBuildMethod(): FunSpec {
-        /**
-         * Right now there is no way to pass nullable arguments to non-nullable optional parameters
-         * so we will generate all overloads
-         */
-//        val defaultParameter = parameterList.filter { it.isDefault() }.toTypedArray()
-//        for (index in 0 until defaultParameter.count()) {
-//
-//        }
 
-        return FunSpec.builder("build")
+
+        val builder = FunSpec.builder("build")
             .returns(inputClassName)
-            .addStatement("return $inputClassName(${parameterList.joinToString(separator = ", ") { it.name }})")
-            .build()
+
+        val defaultParameters = parameterList.filterIsInstance<DefaultParameter>()
+        if (defaultParameters.isEmpty()) {
+            builder.addStatement("return $inputClassName(${parameterList.joinToString(separator = ", ") { it.name }})")
+        } else {
+            val nonDefaultParameters = parameterList.filterNot { it is DefaultParameter }
+
+            builder.beginControlFlow("return when")
+            defaultParameters.powerset().filterNot { it.isEmpty() }
+                .map { params ->
+                    val condition = params.joinToString(separator = " && ") { "${it.name} != null" }
+                    val mandatoryInitializer =
+                        nonDefaultParameters.joinToString(separator = ", ") { "${it.name} = ${it.name}" }
+                    val defaultInitializer =
+                        params.joinToString(separator = ", ") { "${it.name} = ${it.name}!!" }
+                    return@map "$condition -> $inputClassName($mandatoryInitializer, $defaultInitializer)"
+                }
+                .forEach { builder.addStatement(it) }
+            builder.addStatement(
+                "else -> $inputClassName(${nonDefaultParameters.joinToString(separator = ", ") { "${it.name} = ${it.name}" }})"
+            )
+            builder.endControlFlow()
+        }
+        return builder.build()
     }
 
     /**
@@ -183,7 +200,8 @@ internal class BuilderGenerator(
         val fileSpec = FileSpec.builder(packageName, name)
             .addType(outputClassSpec)
             .build()
-        val kaptKotlinGeneratedDir = env.options[BuilderProcessor.KAPT_KOTLIN_GENERATED_OPTION_NAME]
+        val kaptKotlinGeneratedDir =
+            env.options[BuilderProcessor.KAPT_KOTLIN_GENERATED_OPTION_NAME]
         fileSpec.writeTo(File(kaptKotlinGeneratedDir, "$name.kt"))
     }
 }
