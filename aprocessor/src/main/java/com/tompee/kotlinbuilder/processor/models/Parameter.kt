@@ -107,7 +107,7 @@ internal abstract class Parameter(
         return FunSpec.builder(name)
             .addParameter(ParameterSpec.builder("provider", providerParamType).build())
             .returns(className)
-            .addStatement("${this@Parameter.name} = provider()")
+            .addStatement("${this@Parameter.name} = provider(this)")
             .addStatement("return this")
             .build()
     }
