@@ -6,8 +6,8 @@ import com.tompee.kotlinbuilder.annotations.types.DefaultValueProvider
 @Builder
 internal data class Address(
     @Optional
-    @Nullable
-    val street: String?,
+    @Default
+    val street: String = "",
 
     @Optional
     @Default
@@ -22,8 +22,8 @@ internal data class Address(
     val province: String = "",
 
     @Optional
-    @Provider(StateDefaultValueProvider::class)
-    val state: String
+    @Default
+    val state: String = ""
 ) {
 
     class StateDefaultValueProvider : DefaultValueProvider<String> {

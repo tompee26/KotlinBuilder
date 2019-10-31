@@ -162,11 +162,13 @@ internal class BuilderGenerator(
             defaultParameters.powerset().filterNot { it.isEmpty() }
                 .map { params ->
                     val condition = params.joinToString(separator = " && ") { "${it.name} != null" }
-                    val mandatoryInitializer =
-                        nonDefaultParameters.joinToString(separator = ", ") { "${it.name} = ${it.name}" }
+                    val nonDefaultInitializer = if (nonDefaultParameters.isEmpty()) ""
+                    else nonDefaultParameters.joinToString(
+                        separator = ", ", postfix = ", "
+                    ) { "${it.name} = ${it.name}" }
                     val defaultInitializer =
                         params.joinToString(separator = ", ") { "${it.name} = ${it.name}!!" }
-                    return@map "$condition -> $inputClassName($mandatoryInitializer, $defaultInitializer)"
+                    return@map "$condition -> $inputClassName($nonDefaultInitializer$defaultInitializer)"
                 }
                 .forEach { builder.addStatement(it) }
             builder.addStatement(
