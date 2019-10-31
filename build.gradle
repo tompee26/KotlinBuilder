@@ -21,7 +21,7 @@ allprojects {
     }
 }
 
-project.ext.set("publishVersion", "0.0.8")
+project.ext.set("publishVersion", "0.0.9")
 
 task clean(type: Delete) {
     delete rootProject.buildDir
