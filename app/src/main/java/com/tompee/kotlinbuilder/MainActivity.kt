@@ -27,7 +27,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun address() {
-        val address = AddressBuilder() {
+        val address = AddressBuilder {
             province { "province" }
         }
         Log.i("MainActivity", "Address: $address")

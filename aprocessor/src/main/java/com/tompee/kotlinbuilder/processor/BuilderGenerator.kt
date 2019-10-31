@@ -160,6 +160,7 @@ internal class BuilderGenerator(
 
             builder.beginControlFlow("return when")
             defaultParameters.powerset().filterNot { it.isEmpty() }
+                .sortedByDescending { it.count() }
                 .map { params ->
                     val condition = params.joinToString(separator = " && ") { "${it.name} != null" }
                     val nonDefaultInitializer = if (nonDefaultParameters.isEmpty()) ""
