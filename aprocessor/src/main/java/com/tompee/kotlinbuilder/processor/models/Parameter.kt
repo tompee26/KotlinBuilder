@@ -10,14 +10,12 @@ import javax.lang.model.element.TypeElement
  * A class that represents a constructor parameter
  *
  * @property name actual parameter name
- * @property typeName parameter type name
- * @property isNullable determines if the parameter type is nullable or not
+ * @property propertySpec property spec
  * @property setter optional setter name annotation
  */
 internal abstract class Parameter(
     open val name: String,
-    open val typeName: TypeName,
-    open val isNullable: Boolean,
+    open val propertySpec: PropertySpec,
     open val setter: Setter?
 ) {
 
@@ -26,8 +24,7 @@ internal abstract class Parameter(
      */
     abstract class Builder(
         var name: String,
-        var typeName: TypeName?,
-        var isNullable: Boolean,
+        var propertySpec: PropertySpec?,
         var setter: Setter?
     ) {
         abstract fun build(): Parameter
@@ -73,8 +70,7 @@ internal abstract class Parameter(
             typeSpec.propertySpecs.forEach { propertySpec ->
                 builders.find { it.name == propertySpec.name }
                     ?.apply {
-                        typeName = propertySpec.type
-                        isNullable = propertySpec.type.isNullable
+                        this.propertySpec = propertySpec
                     }
             }
             return builders.map { it.build() }
@@ -107,7 +103,7 @@ internal abstract class Parameter(
     fun toBuilderFunSpec(className: ClassName): FunSpec {
         val name = setter?.name ?: name
         val providerParamType =
-            LambdaTypeName.get(className, returnType = typeName)
+            LambdaTypeName.get(className, returnType = propertySpec.type)
         return FunSpec.builder(name)
             .addParameter(ParameterSpec.builder("provider", providerParamType).build())
             .returns(className)

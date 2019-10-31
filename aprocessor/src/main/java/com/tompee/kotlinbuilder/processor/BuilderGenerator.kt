@@ -149,8 +149,6 @@ internal class BuilderGenerator(
      * Creates the build method
      */
     private fun createBuildMethod(): FunSpec {
-
-
         val builder = FunSpec.builder("build")
             .returns(inputClassName)
 
@@ -186,12 +184,19 @@ internal class BuilderGenerator(
     private fun buildClassSpec(): TypeSpec {
         val className =
             if (annotation.name.isEmpty()) "${element.simpleName}Builder" else annotation.name
+
+        check(!inputTypeSpec.modifiers.any { it == KModifier.PRIVATE }) { "$inputClassName is a private class" }
+
+        val shouldBeInternal = inputTypeSpec.modifiers.any { it == KModifier.INTERNAL } ||
+                parameterList.any { param -> param.propertySpec.modifiers.any { it == KModifier.INTERNAL } }
+
         val classSpecBuilder = TypeSpec.classBuilder(className)
             .primaryConstructor(builderConstructor)
             .addType(outputCompanionObject)
             .addProperties(parameterList.map { it.toPropertySpec() })
             .addFunctions(setterMethods)
             .addFunction(buildMethod)
+        if (shouldBeInternal) classSpecBuilder.addModifiers(KModifier.INTERNAL)
         return classSpecBuilder.build()
     }
 

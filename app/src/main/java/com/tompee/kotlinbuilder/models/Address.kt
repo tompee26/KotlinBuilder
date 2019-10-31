@@ -4,7 +4,7 @@ import com.tompee.kotlinbuilder.annotations.*
 import com.tompee.kotlinbuilder.annotations.types.DefaultValueProvider
 
 @Builder
-data class Address(
+internal data class Address(
     @Optional
     @Nullable
     val street: String?,
