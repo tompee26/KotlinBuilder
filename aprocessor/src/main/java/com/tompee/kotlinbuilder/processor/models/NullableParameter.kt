@@ -26,6 +26,9 @@ internal data class NullableParameter(
     ) : Parameter.Builder(name, propertySpec, setter) {
 
         override fun build(): Parameter {
+            if (propertySpec?.type?.isNullable != true) {
+                throw Throwable("$name is annotated with @Optional.Nullable but its type is not nullable")
+            }
             return NullableParameter(name, propertySpec!!, setter)
         }
     }
