@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.tompee.kotlinbuilder.annotations.ValueProvider
 import com.tompee.kotlinbuilder.annotations.Setter
+import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 import javax.lang.model.type.MirroredTypeException
 import javax.lang.model.type.TypeMirror
 
@@ -64,7 +65,7 @@ internal data class ProviderParameter(
      */
     override fun createInitializeStatement(): String {
         val typeName = getProvider()
-        return "val $name = $typeName().get()"
+        return "val $name = $typeName().get()".wrapProof()
     }
 
     private fun getProvider(): TypeMirror {

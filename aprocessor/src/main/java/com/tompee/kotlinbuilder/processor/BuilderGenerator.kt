@@ -6,6 +6,7 @@ import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import com.squareup.kotlinpoet.metadata.toImmutableKmClass
 import com.tompee.kotlinbuilder.annotations.KBuilder
+import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 import com.tompee.kotlinbuilder.processor.models.DefaultParameter
 import com.tompee.kotlinbuilder.processor.models.Parameter
 import java.io.File
@@ -119,10 +120,10 @@ internal class BuilderGenerator(
 
         createOverload
             .addStatement(
-                "val builder = ${builderClassName}(${parameterList.joinToString(separator = ", ") { it.name }})"
+                "val builder = ${builderClassName}(${parameterList.joinToString(separator = ", ") { it.name }})".wrapProof()
             )
-            .addStatement("builderInit(builder)")
-            .addStatement("return builder.build()")
+            .addStatement("builderInit(builder)".wrapProof())
+            .addStatement("return builder.build()".wrapProof())
         //endregion
 
         // regionFirst invoke overload
@@ -135,7 +136,7 @@ internal class BuilderGenerator(
             .forEach { builderOverload.addStatement(it.createInitializeStatement()) }
 
         builderOverload.addStatement(
-            "return ${builderClassName}(${parameterList.joinToString(separator = ", ") { it.name }})"
+            "return ${builderClassName}(${parameterList.joinToString(separator = ", ") { it.name }})".wrapProof()
         )
         //endregion
 
@@ -154,7 +155,7 @@ internal class BuilderGenerator(
 
         val defaultParameters = parameterList.filterIsInstance<DefaultParameter>()
         if (defaultParameters.isEmpty()) {
-            builder.addStatement("return $inputClassName(${parameterList.joinToString(separator = ", ") { it.name }})")
+            builder.addStatement("return $inputClassName(${parameterList.joinToString(separator = ", ") { it.name }})".wrapProof())
         } else {
             val nonDefaultParameters = parameterList.filterNot { it is DefaultParameter }
 
@@ -171,9 +172,9 @@ internal class BuilderGenerator(
                         params.joinToString(separator = ", ") { "${it.name} = ${it.name}!!" }
                     return@map "$condition -> $inputClassName($nonDefaultInitializer$defaultInitializer)"
                 }
-                .forEach { builder.addStatement(it) }
+                .forEach { builder.addStatement(it.wrapProof()) }
             builder.addStatement(
-                "else -> $inputClassName(${nonDefaultParameters.joinToString(separator = ", ") { "${it.name} = ${it.name}" }})"
+                "else -> $inputClassName(${nonDefaultParameters.joinToString(separator = ", ") { "${it.name} = ${it.name}" }})".wrapProof()
             )
             builder.endControlFlow()
         }

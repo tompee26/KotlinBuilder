@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.tompee.kotlinbuilder.annotations.Setter
+import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 
 /**
  * Represents an optional nullable parameter in the target class constructor.
@@ -57,6 +58,6 @@ internal data class NullableParameter(
      * Builds an invoke method initializer statement
      */
     override fun createInitializeStatement(): String {
-        return "val $name : ${propertySpec.type} = null"
+        return "val $name : ${propertySpec.type} = null".wrapProof()
     }
 }

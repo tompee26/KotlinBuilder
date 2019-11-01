@@ -2,6 +2,7 @@ package com.tompee.kotlinbuilder.processor.models
 
 import com.squareup.kotlinpoet.*
 import com.tompee.kotlinbuilder.annotations.*
+import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
@@ -107,8 +108,7 @@ internal abstract class Parameter(
         return FunSpec.builder(name)
             .addParameter(ParameterSpec.builder("provider", providerParamType).build())
             .returns(className)
-            .addStatement("${this@Parameter.name} = provider()")
-            .addStatement("return this")
+            .addStatement("return apply { ${this@Parameter.name} = provider() }".wrapProof())
             .build()
     }
 

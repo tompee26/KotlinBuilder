@@ -12,7 +12,7 @@ In your build.gradle, add the following dependencies:
 
 ```
 dependencies {
-   compileOny "com.tompee.kotlinbuilder:annotations:$latest_version"
+   implementation "com.tompee.kotlinbuilder:annotations:$latest_version"
    kapt "com.tompee.kotlinbuilder:processor:$latest_version"
 }
 ```
