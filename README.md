@@ -29,7 +29,7 @@ Only the parameters defined in the primary constructor will be eligible for sett
 This will generate a builder class that allows you to use the builder pattern and Kotlin DSL.
 
 ## Optional parameters
-By default, all parameters defined in the target class are `mandatory` parameters. Mandatory parameters are required during builder object instantiation. For example, using the `Person` class above, you need to provide the `name` to construct the builder object.
+By default, all parameters defined in the target class are mandatory parameters. Mandatory parameters are required during builder object instantiation. For example, using the `Person` class above, you need to provide the `name` to construct the builder object.
 
 ```kotlin
 val person = PersonBuilder("name").build()
@@ -56,7 +56,7 @@ val person = PersonBuilder("last_name")
 ```
 
 ### Value Provider
-`@Provider` must be used in conjunction with `@Optional`. `@ValueProvider` requires an implementation of `DefaultValueProvider<T>` to generate a custom default value of your choice.
+`@ValueProvider` must be used in conjunction with `@Optional`. `@ValueProvider` requires an implementation of `DefaultValueProvider<T>` to generate a custom default value of your choice.
 
 ```kotlin
 class LastNameProvider : DefaultValueProvider<String> {
@@ -79,8 +79,6 @@ val person = PersonBuilder("last_name")
     .build()
 ```
 
-Additional mechanism will be added in the future so watch out.
-
 ### Default Values
 `@Default` must be used in conjunction with `@Optional`. `@Default` requires the target to have a default value.
 
@@ -100,12 +98,12 @@ val person = PersonBuilder("last_name")
 ```
 
 #### Limitation
-Kotlin default parameters are not available as metadata nor is represented as a property on the class type. They are only represented as instructions in byte code. Because of this, there is no reliable way to detect if a parameter has a default value at compile time. You need to ensure that all parameters annotated with `@Default` really has a default value. The generated code can fail if the types don't match but may not be true for all cases.
+Kotlin default parameters are not available as metadata nor are represented as a property on the class type. They are only represented as instructions in byte code. Because of this, there is no reliable way to detect if a parameter has a default value at compile time. You need to ensure that all parameters annotated with `@Default` really has a default value. The generated code can fail if the types don't match but may not be true for all cases.
 
 ### Caution: Default value resolution
-Default values are represented as nullable types in the builder. When these nullable variables are modified, they will overwrite the default value upon call to build. However, named non-null parameters in Kotlin does not support null inputs. To work around this, a matrix of default value powerset is created that checks for all possible combinations of modified default values. The size of this powerset is 2^x where x is the number of default values.
+Default values are represented as nullable types in the builder. When these nullable variables are modified, they will overwrite the default value upon call to build. However, named non-null parameters in Kotlin does not support null inputs. To work around this, a matrix of default value powerset is created that checks for all possible combinations of modified default values. The size of this powerset is 2^x where x is the number of default values. The worst case complexity of a builder with default values is therefore Log(2^n).
 
-## Custom setter name
+### Custom setter name
 `@Setter` can be used to provide a custom setter name function to a parameter. By default, the parameter name will be used.
 
 ```kotlin
