@@ -3,36 +3,33 @@ package com.tompee.kotlinbuilder.processor.models
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
-import com.tompee.kotlinbuilder.annotations.Optional
 import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
-import javax.lang.model.type.MirroredTypeException
-import javax.lang.model.type.TypeMirror
 
 /**
- * Represents an optional parameter with default value provider in the target class constructor.
+ * Represents an optional parameter in the target class constructor.
+ * An optional parameter is valid if it passes on of the following rules:
+ * 1. It is a value type
+ * 2. It is a nullable type
  *
  * @property name actual parameter name
  * @property propertySpec property spec
  * @property setter optional setter name annotation
- * @property valueProvider valueProvider information
  */
-internal data class ProviderParameter(
+internal data class OptionalParameter(
     override val name: String,
     override val propertySpec: PropertySpec,
-    override val setter: Setter?,
-    val valueProvider: Optional.ValueProvider
+    override val setter: Setter?
 ) : Parameter(name, propertySpec, setter) {
 
     class Builder(
-        private val valueProvider: Optional.ValueProvider,
         name: String = "",
         propertySpec: PropertySpec? = null,
         setter: Setter? = null
     ) : Parameter.Builder(name, propertySpec, setter) {
 
         override fun build(): Parameter {
-            return ProviderParameter(name, propertySpec!!, setter, valueProvider)
+            return OptionalParameter(name, propertySpec!!, setter)
         }
     }
 
@@ -40,14 +37,15 @@ internal data class ProviderParameter(
      * Builds a constructor parameter spec
      */
     override fun toCtrParamSpec(): ParameterSpec {
-        return ParameterSpec.builder(name, propertySpec.type, KModifier.PRIVATE).build()
+        return ParameterSpec.builder(name, propertySpec.type.copy(true), KModifier.PRIVATE).build()
     }
+
 
     /**
      * Builds a constructor parameter spec
      */
     override fun toPropertySpec(): PropertySpec {
-        return PropertySpec.builder(name, propertySpec.type)
+        return PropertySpec.builder(name, propertySpec.type.copy(true))
             .initializer(name)
             .mutable()
             .build()
@@ -64,17 +62,6 @@ internal data class ProviderParameter(
      * Builds an invoke method initializer statement
      */
     override fun createInitializeStatement(): String {
-        val typeName = getProvider()
-        return "val $name = $typeName().get()".wrapProof()
-    }
-
-    private fun getProvider(): TypeMirror {
-        try {
-            valueProvider.provider
-        } catch (mte: MirroredTypeException) {
-            return mte.typeMirror
-        }
-
-        throw IllegalStateException("DefaultValueProvider type cannot be determined")
+        return "val $name : ${propertySpec.type.copy(true)} = null".wrapProof()
     }
 }

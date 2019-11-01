@@ -1,11 +1,13 @@
 package com.tompee.kotlinbuilder.processor.models
 
 import com.squareup.kotlinpoet.*
-import com.tompee.kotlinbuilder.annotations.*
+import com.tompee.kotlinbuilder.annotations.Optional
+import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
+import javax.lang.model.element.VariableElement
 
 /**
  * A class that represents a constructor parameter
@@ -48,18 +50,7 @@ internal abstract class Parameter(
              * Now we use the java constructor to check for annotations
              */
             val builders = ctr.parameters.map {
-                if (it.getAnnotation(Optional::class.java) == null) {
-                    MandatoryParameter.Builder()
-                } else {
-                    when {
-                        it.getAnnotation(Nullable::class.java) != null -> NullableParameter.Builder()
-                        it.getAnnotation(Default::class.java) != null -> DefaultParameter.Builder()
-                        it.getAnnotation(ValueProvider::class.java) != null -> ProviderParameter.Builder(
-                            it.getAnnotation(ValueProvider::class.java)
-                        )
-                        else -> throw IllegalStateException("Unsupported optional parameter: ${it.simpleName}")
-                    }
-                }.apply {
+                it.createBuilder().apply {
                     name = it.simpleName.toString()
                     setter = it.getAnnotation(Setter::class.java)
                 }
@@ -74,7 +65,25 @@ internal abstract class Parameter(
                         this.propertySpec = propertySpec
                     }
             }
+
             return builders.map { it.build() }
+        }
+
+        /**
+         * Returns the appropriate builder depending on annotations
+         */
+        private fun VariableElement.createBuilder(): Builder {
+            return when {
+                /**
+                 * These types are explicitly defined
+                 */
+                getAnnotation(Optional.Nullable::class.java) != null -> NullableParameter.Builder()
+                getAnnotation(Optional.Default::class.java) != null -> DefaultParameter.Builder()
+                getAnnotation(Optional.ValueProvider::class.java) != null -> ProviderParameter.Builder(
+                    getAnnotation(Optional.ValueProvider::class.java)
+                )
+                else -> MandatoryParameter.Builder()
+            }
         }
     }
 

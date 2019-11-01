@@ -2,9 +2,7 @@ package com.tompee.kotlinbuilder.processor
 
 import com.google.auto.service.AutoService
 import com.tompee.kotlinbuilder.annotations.KBuilder
-import com.tompee.kotlinbuilder.annotations.Nullable
 import com.tompee.kotlinbuilder.annotations.Optional
-import com.tompee.kotlinbuilder.annotations.ValueProvider
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessor
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType
 import javax.annotation.processing.*
@@ -26,8 +24,9 @@ class BuilderProcessor : AbstractProcessor() {
         return mutableSetOf(
             KBuilder::class.java.name,
             Optional::class.java.name,
-            Nullable::class.java.name,
-            ValueProvider::class.java.name
+            Optional.Nullable::class.java.name,
+            Optional.ValueProvider::class.java.name,
+            Optional.Default::class.java.name
         )
     }
 

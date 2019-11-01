@@ -1,4 +1,4 @@
-package com.tompee.kotlinbuilder.annotations.types
+package com.tompee.kotlinbuilder.annotations
 
 /**
  * Default value provider. Non-nullable optional values always require a default value.
