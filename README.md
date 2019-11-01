@@ -14,14 +14,14 @@ In your build.gradle, add the following dependencies:
 
 ```
 dependencies {
-   implementation "com.tompee.kotlinbuilder:annotations:$latest_version"
+   compileOny "com.tompee.kotlinbuilder:annotations:$latest_version"
    kapt "com.tompee.kotlinbuilder:processor:$latest_version"
 }
 ```
 
-Define a `class` or `data class` and annotate with `@Builder`. `@Builder` has an optional `name` parameter where you can specify a custom builder class name. If not set, it is by default the target class appended with `Builder` (i.e. `PersonBuilder`)
+Define a `class` or `data class` and annotate with `@KBuilder`. `@KBuilder` has an optional `name` parameter where you can specify a custom builder class name. If not set, it is by default the target class appended with `Builder` (e.g. `PersonBuilder`)
 ```kotlin
-@Builder
+@KBuilder
 data class Person(val name : String)
 ```
 
@@ -35,13 +35,13 @@ By default, all parameters defined in the target class are `mandatory` parameter
 val person = PersonBuilder("name").build()
 ```
 
-To specify an optional parameter, annotate it with `@Optional`. The catch with optional parameters is that you have to define a default value provider mechanism to let the builder know what to use. Currently, there are 2 methods in doing so.
+To specify an optional parameter, annotate it with `@Optional`. The catch with optional parameters is that you have to define a default value provider mechanism to let the builder know what to use. Currently, there are 3 methods in doing so.
 
 ### Nullable
-`@Nullable` must be used in conjunction with `@Optional`. `@Nullable` requires that the target parameter type be nullable (i.e. String?). The builder will set this parameter by default to null.
+`@Nullable` must be used in conjunction with `@Optional`. `@Nullable` requires that the target parameter type be nullable (e.g. String?). The builder will set this parameter by default to null.
 
 ```kotlin
-@Builder
+@KBuilder
 data class Person(
     val lastName : String,
     
@@ -55,22 +55,22 @@ val person = PersonBuilder("last_name")
     .build()
 ```
 
-### Provider
-`@Provider` must be used in conjunction with `@Optional`. `@Provider` requires an implementation of `DefaultValueProvider<T>` to generate a custom default value of your choice.
+### Value Provider
+`@Provider` must be used in conjunction with `@Optional`. `@ValueProvider` requires an implementation of `DefaultValueProvider<T>` to generate a custom default value of your choice.
 
 ```kotlin
 class LastNameProvider : DefaultValueProvider<String> {
     override fun get() : String {
         return "last_name"
-    }
+    } 
 }
 
-@Builder
+@KBuilder
 data class Person(
     val lastName: String,
     
     @Optional
-    @Provider(LastNameProvider::class)
+    @ValueProvider(LastNameProvider::class)
     val firstName : String
 )
 ...
@@ -80,6 +80,30 @@ val person = PersonBuilder("last_name")
 ```
 
 Additional mechanism will be added in the future so watch out.
+
+### Default Values
+`@Default` must be used in conjunction with `@Optional`. `@Default` requires the target to have a default value.
+
+```kotlin
+@KBuilder
+data class Person(
+    val lastName : String,
+    
+    @Optional
+    @Default
+    val firstName: String = "Benedict"
+)
+...
+val person = PersonBuilder("last_name")
+    .firstName { "first_name" }
+    .build()
+```
+
+#### Limitation
+Kotlin default parameters are not available as metadata nor is represented as a property on the class type. They are only represented as instructions in byte code. Because of this, there is no reliable way to detect if a parameter has a default value at compile time. You need to ensure that all parameters annotated with `@Default` really has a default value. The generated code can fail if the types don't match but may not be true for all cases.
+
+### Caution: Default value resolution
+Default values are represented as nullable types in the builder. When these nullable variables are modified, they will overwrite the default value upon call to build. However, named non-null parameters in Kotlin does not support null inputs. To work around this, a matrix of default value powerset is created that checks for all possible combinations of modified default values. The size of this powerset is 2^x where x is the number of default values.
 
 ## Custom setter name
 `@Setter` can be used to provide a custom setter name function to a parameter. By default, the parameter name will be used.
