@@ -1,10 +1,8 @@
 # Kotlin Builder DSL
 A builder pattern code generator for Kotlin leveraging DSL. Boilerplate code no more!
 
-Note: Pre-alpha release.
-
 ## Features
-- Generates builder and factory pattern code in Kotlin taking advantage of DSL
+- Generates builder pattern code in Kotlin taking advantage of Kotlin DSL syntax
 - Supports optional parameters
 
 ## Getting started
@@ -103,7 +101,7 @@ Kotlin default parameters are not available as metadata nor are represented as a
 ### Caution: Default value resolution
 Default values are represented as nullable types in the builder. When these nullable variables are modified, they will overwrite the default value upon call to build. However, named non-null parameters in Kotlin does not support null inputs. To work around this, a matrix of default value powerset is created that checks for all possible combinations of modified default values. The size of this powerset is 2^x where x is the number of default values. The worst case complexity of a builder with default values is therefore Log(2^n).
 
-### Custom setter name
+#### Custom setter name
 `@Setter` can be used to provide a custom setter name function to a parameter. By default, the parameter name will be used.
 
 ```kotlin
