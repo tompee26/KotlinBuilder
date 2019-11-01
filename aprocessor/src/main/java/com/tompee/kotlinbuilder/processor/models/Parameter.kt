@@ -1,6 +1,7 @@
 package com.tompee.kotlinbuilder.processor.models
 
 import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.tompee.kotlinbuilder.annotations.Optional
 import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
@@ -8,6 +9,7 @@ import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
 import javax.lang.model.element.VariableElement
+import javax.lang.model.util.Types
 
 /**
  * A class that represents a constructor parameter
@@ -33,6 +35,7 @@ internal abstract class Parameter(
         abstract fun build(): Parameter
     }
 
+    @KotlinPoetMetadataPreview
     companion object {
 
         /**
@@ -40,8 +43,9 @@ internal abstract class Parameter(
          *
          * @param element builder class type element
          * @param typeSpec builder class type spec
+         * @param types type utils
          */
-        fun parse(element: TypeElement, typeSpec: TypeSpec): List<Parameter> {
+        fun parse(element: TypeElement, typeSpec: TypeSpec, types: Types): List<Parameter> {
             val ctr = element.enclosedElements
                 .firstOrNull { it.kind == ElementKind.CONSTRUCTOR } as? ExecutableElement
                 ?: throw IllegalStateException("No constructor found for ${element.simpleName}")
@@ -50,7 +54,7 @@ internal abstract class Parameter(
              * Now we use the java constructor to check for annotations
              */
             val builders = ctr.parameters.map {
-                it.createBuilder().apply {
+                it.createBuilder(types).apply {
                     name = it.simpleName.toString()
                     setter = it.getAnnotation(Setter::class.java)
                 }
@@ -72,7 +76,7 @@ internal abstract class Parameter(
         /**
          * Returns the appropriate builder depending on annotations
          */
-        private fun VariableElement.createBuilder(): Builder {
+        private fun VariableElement.createBuilder(types: Types): Builder {
             return when {
                 /**
                  * These types are explicitly defined
@@ -80,7 +84,7 @@ internal abstract class Parameter(
                 getAnnotation(Optional.Nullable::class.java) != null -> NullableParameter.Builder()
                 getAnnotation(Optional.Default::class.java) != null -> DefaultParameter.Builder()
                 getAnnotation(Optional.ValueProvider::class.java) != null -> ProviderParameter.Builder(
-                    getAnnotation(Optional.ValueProvider::class.java)
+                    getAnnotation(Optional.ValueProvider::class.java), types
                 )
                 else -> MandatoryParameter.Builder()
             }

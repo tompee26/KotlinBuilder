@@ -21,6 +21,11 @@ internal class BuilderGenerator(
     private val element: Element
 ) {
     /**
+     * Type utils
+     */
+    private val typeUtils = env.typeUtils
+
+    /**
      * KBuilder class annotation instance
      */
     private val annotation = element.getAnnotation(KBuilder::class.java)
@@ -48,7 +53,7 @@ internal class BuilderGenerator(
     /**
      * Constructor parameter list
      */
-    private val parameterList by lazy { Parameter.parse(element as TypeElement, inputTypeSpec) }
+    private val parameterList by lazy { Parameter.parse(element as TypeElement, inputTypeSpec, typeUtils) }
 
     /**
      * Output builder constructor
