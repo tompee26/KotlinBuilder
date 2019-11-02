@@ -5,11 +5,11 @@ import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.tompee.kotlinbuilder.annotations.Optional
 import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
+import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
 import javax.lang.model.element.VariableElement
-import javax.lang.model.util.Types
 
 /**
  * A class that represents a constructor parameter
@@ -43,9 +43,13 @@ internal abstract class Parameter(
          *
          * @param element builder class type element
          * @param typeSpec builder class type spec
-         * @param types type utils
+         * @param env processing environment
          */
-        fun parse(element: TypeElement, typeSpec: TypeSpec, types: Types): List<Parameter> {
+        fun parse(
+            element: TypeElement,
+            typeSpec: TypeSpec,
+            env: ProcessingEnvironment
+        ): List<Parameter> {
             val ctr = element.enclosedElements
                 .firstOrNull { it.kind == ElementKind.CONSTRUCTOR } as? ExecutableElement
                 ?: throw IllegalStateException("No constructor found for ${element.simpleName}")
@@ -54,7 +58,7 @@ internal abstract class Parameter(
              * Now we use the java constructor to check for annotations
              */
             val builders = ctr.parameters.map {
-                it.createBuilder(types).apply {
+                it.createBuilder(env).apply {
                     name = it.simpleName.toString()
                     setter = it.getAnnotation(Setter::class.java)
                 }
@@ -76,7 +80,7 @@ internal abstract class Parameter(
         /**
          * Returns the appropriate builder depending on annotations
          */
-        private fun VariableElement.createBuilder(types: Types): Builder {
+        private fun VariableElement.createBuilder(env: ProcessingEnvironment): Builder {
             return when {
                 /**
                  * These types are explicitly defined
@@ -84,7 +88,7 @@ internal abstract class Parameter(
                 getAnnotation(Optional.Nullable::class.java) != null -> NullableParameter.Builder()
                 getAnnotation(Optional.Default::class.java) != null -> DefaultParameter.Builder()
                 getAnnotation(Optional.ValueProvider::class.java) != null -> ProviderParameter.Builder(
-                    getAnnotation(Optional.ValueProvider::class.java), types
+                    getAnnotation(Optional.ValueProvider::class.java), env
                 )
                 else -> MandatoryParameter.Builder()
             }

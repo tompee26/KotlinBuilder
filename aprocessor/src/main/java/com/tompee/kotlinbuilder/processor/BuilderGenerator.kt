@@ -3,42 +3,30 @@ package com.tompee.kotlinbuilder.processor
 import com.marcinmoskala.math.powerset
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
-import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
-import com.squareup.kotlinpoet.metadata.toImmutableKmClass
-import com.tompee.kotlinbuilder.annotations.KBuilder
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 import com.tompee.kotlinbuilder.processor.models.DefaultParameter
 import com.tompee.kotlinbuilder.processor.models.Parameter
+import com.tompee.kotlinbuilder.processor.models.TypeElementProperties
 import java.io.File
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
 import javax.lang.model.element.TypeElement
 
-
+/**
+ * Generates a builder code and file from the given [Element]
+ *
+ * @property env processing environment
+ * @param element the input element
+ */
 @UseExperimental(KotlinPoetMetadataPreview::class)
 internal class BuilderGenerator(
     private val env: ProcessingEnvironment,
-    private val element: Element
+    element: Element
 ) {
     /**
-     * Type utils
+     * Type element property
      */
-    private val typeUtils = env.typeUtils
-
-    /**
-     * KBuilder class annotation instance
-     */
-    private val annotation = element.getAnnotation(KBuilder::class.java)
-
-    /**
-     * Package name
-     */
-    private val packageName = env.elementUtils.getPackageOf(element).toString()
-
-    /**
-     * Output builder class name
-     */
-    private val inputClassName by lazy { (element as TypeElement).asType().asTypeName() }
+    private val property = TypeElementProperties(env, element as TypeElement)
 
     /**
      * Output builder class name
@@ -46,14 +34,11 @@ internal class BuilderGenerator(
     private val builderClassName by lazy { generateBuilderClassName() }
 
     /**
-     * Input class type spec
-     */
-    private val inputTypeSpec by lazy { determineTypeSpec(element) }
-
-    /**
      * Constructor parameter list
      */
-    private val parameterList by lazy { Parameter.parse(element as TypeElement, inputTypeSpec, typeUtils) }
+    private val parameterList by lazy {
+        Parameter.parse(element as TypeElement, property.getTypeSpec(), env)
+    }
 
     /**
      * Output builder constructor
@@ -84,16 +69,9 @@ internal class BuilderGenerator(
      * Generates the builder class name from the annotation if available
      */
     private fun generateBuilderClassName(): ClassName {
-        val builderName =
-            if (annotation.name.isEmpty()) "${element.simpleName}Builder" else annotation.name
-        return ClassName(packageName, builderName)
-    }
-
-    /**
-     * Determines the type spec. This is a fallback to read the parameter types
-     */
-    private fun determineTypeSpec(element: Element): TypeSpec {
-        return (element as TypeElement).toImmutableKmClass().toTypeSpec(null)
+        val name = property.getBuilderAnnotation().name
+        val builderName = if (name.isEmpty()) "${property.getName()}Builder" else name
+        return ClassName(property.getPackageName(), builderName)
     }
 
     /**
@@ -113,7 +91,7 @@ internal class BuilderGenerator(
         //region First invoke overload
         val createOverload = FunSpec.builder("invoke")
             .addModifiers(KModifier.INTERNAL, KModifier.OPERATOR)
-            .returns(inputClassName)
+            .returns(property.getTypeName())
             .addParameters(parameterList.filterNot { it.isOptional() }.map { it.toInvokeParamSpec() })
             .addParameter(
                 "builderInit",
@@ -156,11 +134,15 @@ internal class BuilderGenerator(
      */
     private fun createBuildMethod(): FunSpec {
         val builder = FunSpec.builder("build")
-            .returns(inputClassName)
+            .returns(property.getTypeName())
 
         val defaultParameters = parameterList.filterIsInstance<DefaultParameter>()
         if (defaultParameters.isEmpty()) {
-            builder.addStatement("return $inputClassName(${parameterList.joinToString(separator = ", ") { it.name }})".wrapProof())
+            builder.addStatement(
+                "return ${property.getTypeName()}(${parameterList.joinToString(
+                    separator = ", "
+                ) { it.name }})".wrapProof()
+            )
         } else {
             val nonDefaultParameters = parameterList.filterNot { it is DefaultParameter }
 
@@ -175,11 +157,11 @@ internal class BuilderGenerator(
                     ) { "${it.name} = ${it.name}" }
                     val defaultInitializer =
                         params.joinToString(separator = ", ") { "${it.name} = ${it.name}!!" }
-                    return@map "$condition -> $inputClassName($nonDefaultInitializer$defaultInitializer)"
+                    return@map "$condition -> ${property.getTypeName()}($nonDefaultInitializer$defaultInitializer)"
                 }
                 .forEach { builder.addStatement(it.wrapProof()) }
             builder.addStatement(
-                "else -> $inputClassName(${nonDefaultParameters.joinToString(separator = ", ") { "${it.name} = ${it.name}" }})".wrapProof()
+                "else -> ${property.getTypeName()}(${nonDefaultParameters.joinToString(separator = ", ") { "${it.name} = ${it.name}" }})".wrapProof()
             )
             builder.endControlFlow()
         }
@@ -191,15 +173,10 @@ internal class BuilderGenerator(
      * modifier
      */
     private fun buildClassSpec(): TypeSpec {
-        val className =
-            if (annotation.name.isEmpty()) "${element.simpleName}Builder" else annotation.name
+        check(!property.getTypeSpec().modifiers.any { it == KModifier.PRIVATE }) { "${property.getName()} is a private class" }
 
-        check(!inputTypeSpec.modifiers.any { it == KModifier.PRIVATE }) { "$inputClassName is a private class" }
-
-        val shouldBeInternal = inputTypeSpec.modifiers.any { it == KModifier.INTERNAL } ||
-                parameterList.any { param -> param.propertySpec.modifiers.any { it == KModifier.INTERNAL } }
-
-        val classSpecBuilder = TypeSpec.classBuilder(className)
+        val shouldBeInternal = property.getTypeSpec().modifiers.any { it == KModifier.INTERNAL }
+        val classSpecBuilder = TypeSpec.classBuilder(builderClassName)
             .primaryConstructor(builderConstructor)
             .addType(outputCompanionObject)
             .addProperties(parameterList.map { it.toPropertySpec() })
@@ -211,7 +188,7 @@ internal class BuilderGenerator(
 
     fun generate() {
         val name = outputClassSpec.name.toString()
-        val fileSpec = FileSpec.builder(packageName, name)
+        val fileSpec = FileSpec.builder(property.getPackageName(), name)
             .addType(outputClassSpec)
             .build()
         val kaptKotlinGeneratedDir =

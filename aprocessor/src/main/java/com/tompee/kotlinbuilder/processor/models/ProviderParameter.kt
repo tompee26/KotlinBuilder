@@ -1,19 +1,17 @@
 package com.tompee.kotlinbuilder.processor.models
 
-import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.ParameterSpec
-import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.classinspector.elements.ElementsClassInspector
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
-import com.squareup.kotlinpoet.metadata.toImmutableKmClass
+import com.tompee.kotlinbuilder.annotations.DefaultValueProvider
 import com.tompee.kotlinbuilder.annotations.Optional
 import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
+import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.MirroredTypeException
 import javax.lang.model.type.TypeMirror
-import javax.lang.model.util.Types
-import kotlin.reflect.KClass
 
 /**
  * Represents an optional parameter with default value provider in the target class constructor.
@@ -40,32 +38,28 @@ internal data class ProviderParameter(
             }
             throw IllegalStateException("DefaultValueProvider type cannot be determined")
         }
-
-        private fun KClass<*>.getParameters(): TypeMirror {
-            try {
-                this.typeParameters
-            } catch (mte: MirroredTypeException) {
-                return mte.typeMirror
-            }
-            throw IllegalStateException("DefaultValueProvider type cannot be determined")
-        }
     }
 
     @KotlinPoetMetadataPreview
     class Builder(
         private val valueProvider: Optional.ValueProvider,
-        private val types: Types,
+        env: ProcessingEnvironment,
         name: String = "",
         propertySpec: PropertySpec? = null,
         setter: Setter? = null
     ) : Parameter.Builder(name, propertySpec, setter) {
 
+        private val types = env.typeUtils
+        private val classInspector = ElementsClassInspector.create(env.elementUtils, env.typeUtils)
+        private val providerTypeClassName = DefaultValueProvider::class.asClassName()
+
         override fun build(): Parameter {
             val provider = valueProvider.getProvider()
-            val typeSpec =
-                (types.asElement(provider) as TypeElement).toImmutableKmClass().toTypeSpec(null)
-            val providerReturnType = typeSpec.funSpecs.find { it.name == "get" }?.returnType
-                ?: throw Throwable("Value provider type not found")
+            val typeSpec = (types.asElement(provider) as TypeElement).toTypeSpec(classInspector)
+            val providerReturnType = typeSpec.superinterfaces.keys.filterIsInstance<ParameterizedTypeName>()
+                .find { it.rawType == providerTypeClassName }?.typeArguments?.first()
+                ?: throw Throwable("$provider is a subtype of DefaultValueProvider")
+
             if (providerReturnType != propertySpec?.type) {
                 throw Throwable("Parameter $name type is not the same as the ValueProvider type ")
             }
