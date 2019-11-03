@@ -52,7 +52,7 @@ internal data class DefaultParameter(
      * Builds an invoke method parameter spec
      */
     override fun toInvokeParamSpec(): ParameterSpec {
-        throw IllegalStateException("This should not be called")
+        throw Throwable("Internal error. This should not be called")
     }
 
     /**

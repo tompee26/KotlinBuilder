@@ -9,6 +9,7 @@ data class Nullable(
     val explicit: String?
 
 // This will cause a compile-time error
+//    ,
 //    @Optional.Nullable
 //    val invalid: String
 )

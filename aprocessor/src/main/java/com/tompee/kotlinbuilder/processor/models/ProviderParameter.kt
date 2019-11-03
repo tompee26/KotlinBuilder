@@ -36,7 +36,7 @@ internal data class ProviderParameter(
             } catch (mte: MirroredTypeException) {
                 return mte.typeMirror
             }
-            throw IllegalStateException("DefaultValueProvider type cannot be determined")
+            throw Throwable("DefaultValueProvider type cannot be determined")
         }
     }
 
@@ -59,10 +59,10 @@ internal data class ProviderParameter(
             val providerReturnType =
                 typeSpec.superinterfaces.keys.filterIsInstance<ParameterizedTypeName>()
                     .find { it.rawType == providerTypeClassName }?.typeArguments?.first()
-                    ?: throw Throwable("$provider is a subtype of DefaultValueProvider")
+                    ?: throw Throwable("$provider is not a subtype of DefaultValueProvider")
 
             if (providerReturnType != propertySpec?.type) {
-                throw Throwable("Parameter $name type is not the same as the ValueProvider type ")
+                throw Throwable("Parameter $name type (${propertySpec?.type}) is not the same as the ValueProvider type ($providerReturnType)")
             }
             return ProviderParameter(name, propertySpec!!, setter, providerName)
         }
@@ -89,7 +89,7 @@ internal data class ProviderParameter(
      * Builds an invoke method parameter spec
      */
     override fun toInvokeParamSpec(): ParameterSpec {
-        throw IllegalStateException("This should not be called")
+        throw IllegalStateException("Internal error. This should not be called")
     }
 
     /**

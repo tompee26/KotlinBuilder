@@ -62,7 +62,7 @@ internal data class OptionalParameter(
                 if (it is ParameterizedTypeName) it.rawType else it
             }
             val initializer = optionalValueTypeMap[typeName]
-                ?: throw Throwable("Default value for $name cannot be inferred")
+                ?: throw Throwable("Default value for paramter $name cannot be inferred")
 
             return OptionalParameter(name, propertySpec, setter, initializer)
         }
@@ -89,7 +89,7 @@ internal data class OptionalParameter(
      * Builds an invoke method parameter spec
      */
     override fun toInvokeParamSpec(): ParameterSpec {
-        throw IllegalStateException("This should not be called")
+        throw Throwable("Internal error. This should not be called")
     }
 
     /**

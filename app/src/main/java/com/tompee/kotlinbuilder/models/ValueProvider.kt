@@ -10,6 +10,7 @@ data class ValueProvider(
     @Optional.ValueProvider(Provider::class)
     val explicit: List<String>
 
+//    ,
 //    @Optional.ValueProvider(InvalidTypeProvider::class)
 //    val invalid: List<String>
 ) {

@@ -57,6 +57,6 @@ internal data class MandatoryParameter(
      * Builds an invoke method initializer statement
      */
     override fun createInitializeStatement(): String {
-        throw IllegalStateException("This should not be called")
+        throw Throwable("Internal error. This should not be called")
     }
 }

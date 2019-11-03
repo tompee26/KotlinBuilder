@@ -9,6 +9,7 @@ import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.Element
 import javax.lang.model.element.TypeElement
+import javax.tools.Diagnostic
 
 @AutoService(Processor::class)
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
@@ -41,6 +42,10 @@ class BuilderProcessor : AbstractProcessor() {
      * Generates a KBuilder class from the element
      */
     private fun generate(element: Element) {
-        BuilderGenerator(processingEnv, element).generate()
+        try {
+            BuilderGenerator(processingEnv, element).generate()
+        } catch (e: Throwable) {
+            processingEnv.messager.printMessage(Diagnostic.Kind.ERROR, e.message, element)
+        }
     }
 }

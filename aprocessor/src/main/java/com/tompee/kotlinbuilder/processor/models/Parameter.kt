@@ -51,10 +51,10 @@ internal abstract class Parameter(
             env: ProcessingEnvironment
         ): List<Parameter> {
             val kotlinCtr = typeSpec.primaryConstructor
-                ?: throw Throwable("No primary constructor defined for class ${typeSpec.name}")
+                ?: throw Throwable("No kotlin primary constructor defined")
             val javaCtr = element.enclosedElements
                 .firstOrNull { it.kind == ElementKind.CONSTRUCTOR } as? ExecutableElement
-                ?: throw IllegalStateException("No constructor found for ${element.simpleName}")
+                ?: throw Throwable("No java constructor found.")
 
             return kotlinCtr.parameters.zip(javaCtr.parameters) { kParam, jParam ->
                 jParam.createBuilder(env).apply {
@@ -74,8 +74,8 @@ internal abstract class Parameter(
                 /**
                  * These types are explicitly defined
                  */
-                getAnnotation(Optional.Nullable::class.java) != null -> OptionalParameter.Builder()
-                getAnnotation(Optional.Default::class.java) != null -> OptionalParameter.Builder()
+                getAnnotation(Optional.Nullable::class.java) != null -> NullableParameter.Builder()
+                getAnnotation(Optional.Default::class.java) != null -> DefaultParameter.Builder()
                 getAnnotation(Optional.ValueProvider::class.java) != null -> {
                     val annotation = getAnnotation(Optional.ValueProvider::class.java)
                     ProviderParameter.Builder(annotation, env)

@@ -27,7 +27,7 @@ internal data class NullableParameter(
 
         override fun build(): Parameter {
             if (propertySpec?.type?.isNullable != true) {
-                throw Throwable("$name is annotated with @Optional.Nullable but its type is not nullable")
+                throw Throwable("Parameter $name is annotated with @Optional.Nullable but its type is not nullable. Actual type is ${propertySpec?.type}")
             }
             return NullableParameter(name, propertySpec!!, setter)
         }
@@ -54,7 +54,7 @@ internal data class NullableParameter(
      * Builds an invoke method parameter spec
      */
     override fun toInvokeParamSpec(): ParameterSpec {
-        throw IllegalStateException("This should not be called")
+        throw Throwable("Internal error. This should not be called")
     }
 
     /**
