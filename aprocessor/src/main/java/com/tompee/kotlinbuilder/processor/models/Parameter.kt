@@ -60,6 +60,7 @@ internal abstract class Parameter(
                 jParam.createBuilder(env).apply {
                     name = kParam.name
                     propertySpec = typeSpec.propertySpecs.find { it.name == kParam.name }
+                    setter = jParam.getAnnotation(Setter::class.java)
                 }
             }.map { it.build() }
         }

@@ -1,8 +1,6 @@
 package com.tompee.kotlinbuilder.processor.models
 
-import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.ParameterSpec
-import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.*
 import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 
@@ -29,6 +27,11 @@ internal data class OptionalParameter(
     ) : Parameter.Builder(name, propertySpec, setter) {
 
         override fun build(): Parameter {
+            if (propertySpec!!.type.isNullable) {
+                return NullableParameter(name, propertySpec!!, setter)
+            }
+
+
             return OptionalParameter(name, propertySpec!!, setter)
         }
     }
@@ -39,7 +42,6 @@ internal data class OptionalParameter(
     override fun toCtrParamSpec(): ParameterSpec {
         return ParameterSpec.builder(name, propertySpec.type.copy(true), KModifier.PRIVATE).build()
     }
-
 
     /**
      * Builds a constructor parameter spec
