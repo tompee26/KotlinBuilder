@@ -17,8 +17,35 @@ import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 internal data class OptionalParameter(
     override val name: String,
     override val propertySpec: PropertySpec,
-    override val setter: Setter?
+    override val setter: Setter?,
+    private val initializer: Initializer
 ) : Parameter(name, propertySpec, setter) {
+
+    class Initializer(private val initializer: () -> String) {
+        fun get() = initializer()
+    }
+
+    companion object {
+
+        private val optionalValueTypeMap = mapOf(
+            UNIT to Initializer { "Unit" },
+            BYTE to Initializer { "0" },
+            SHORT to Initializer { "0" },
+            INT to Initializer { "0" },
+            LONG to Initializer { "0L" },
+            FLOAT to Initializer { "0f" },
+            DOUBLE to Initializer { "0.0" },
+            BOOLEAN to Initializer { "false" },
+            STRING to Initializer { "\"\"" },
+            LIST to Initializer { "emptyList()" },
+            MUTABLE_LIST to Initializer { "mutableListOf()" },
+            MAP to Initializer { "emptyMap()" },
+            MUTABLE_MAP to Initializer { "mutableMapOf()" },
+            ARRAY to Initializer { "emptyArray()" },
+            SET to Initializer { "emptySet()" },
+            MUTABLE_SET to Initializer { "mutableSetOf()" }
+        )
+    }
 
     class Builder(
         name: String = "",
@@ -27,12 +54,17 @@ internal data class OptionalParameter(
     ) : Parameter.Builder(name, propertySpec, setter) {
 
         override fun build(): Parameter {
-            if (propertySpec!!.type.isNullable) {
-                return NullableParameter(name, propertySpec!!, setter)
+            val propertySpec = this.propertySpec ?: throw Throwable("Property spec not found")
+            if (propertySpec.type.isNullable) {
+                return NullableParameter(name, propertySpec, setter)
             }
+            val typeName = propertySpec.type.let {
+                if (it is ParameterizedTypeName) it.rawType else it
+            }
+            val initializer = optionalValueTypeMap[typeName]
+                ?: throw Throwable("Default value for $name cannot be inferred")
 
-
-            return OptionalParameter(name, propertySpec!!, setter)
+            return OptionalParameter(name, propertySpec, setter, initializer)
         }
     }
 
@@ -40,14 +72,14 @@ internal data class OptionalParameter(
      * Builds a constructor parameter spec
      */
     override fun toCtrParamSpec(): ParameterSpec {
-        return ParameterSpec.builder(name, propertySpec.type.copy(true), KModifier.PRIVATE).build()
+        return ParameterSpec.builder(name, propertySpec.type, KModifier.PRIVATE).build()
     }
 
     /**
      * Builds a constructor parameter spec
      */
     override fun toPropertySpec(): PropertySpec {
-        return PropertySpec.builder(name, propertySpec.type.copy(true))
+        return PropertySpec.builder(name, propertySpec.type)
             .initializer(name)
             .mutable()
             .build()
@@ -64,6 +96,6 @@ internal data class OptionalParameter(
      * Builds an invoke method initializer statement
      */
     override fun createInitializeStatement(): String {
-        return "val $name : ${propertySpec.type.copy(true)} = null".wrapProof()
+        return "val $name : ${propertySpec.type} = ${initializer.get()}".wrapProof()
     }
 }
