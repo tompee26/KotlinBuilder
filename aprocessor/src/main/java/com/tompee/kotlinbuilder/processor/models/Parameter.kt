@@ -50,31 +50,18 @@ internal abstract class Parameter(
             typeSpec: TypeSpec,
             env: ProcessingEnvironment
         ): List<Parameter> {
-            val ctr = element.enclosedElements
+            val kotlinCtr = typeSpec.primaryConstructor
+                ?: throw Throwable("No primary constructor defined for class ${typeSpec.name}")
+            val javaCtr = element.enclosedElements
                 .firstOrNull { it.kind == ElementKind.CONSTRUCTOR } as? ExecutableElement
                 ?: throw IllegalStateException("No constructor found for ${element.simpleName}")
 
-            /**
-             * Now we use the java constructor to check for annotations
-             */
-            val builders = ctr.parameters.map {
-                it.createBuilder(env).apply {
-                    name = it.simpleName.toString()
-                    setter = it.getAnnotation(Setter::class.java)
+            return kotlinCtr.parameters.zip(javaCtr.parameters) { kParam, jParam ->
+                jParam.createBuilder(env).apply {
+                    name = kParam.name
+                    propertySpec = typeSpec.propertySpecs.find { it.name == kParam.name }
                 }
-            }
-
-            /**
-             * Now we will need the actual kotlin type of the parameter
-             */
-            typeSpec.propertySpecs.forEach { propertySpec ->
-                builders.find { it.name == propertySpec.name }
-                    ?.apply {
-                        this.propertySpec = propertySpec
-                    }
-            }
-
-            return builders.map { it.build() }
+            }.map { it.build() }
         }
 
         /**
@@ -82,14 +69,16 @@ internal abstract class Parameter(
          */
         private fun VariableElement.createBuilder(env: ProcessingEnvironment): Builder {
             return when {
+                getAnnotation(Optional::class.java) != null -> OptionalParameter.Builder()
                 /**
                  * These types are explicitly defined
                  */
-                getAnnotation(Optional.Nullable::class.java) != null -> NullableParameter.Builder()
-                getAnnotation(Optional.Default::class.java) != null -> DefaultParameter.Builder()
-                getAnnotation(Optional.ValueProvider::class.java) != null -> ProviderParameter.Builder(
-                    getAnnotation(Optional.ValueProvider::class.java), env
-                )
+                getAnnotation(Optional.Nullable::class.java) != null -> OptionalParameter.Builder()
+                getAnnotation(Optional.Default::class.java) != null -> OptionalParameter.Builder()
+                getAnnotation(Optional.ValueProvider::class.java) != null -> {
+                    val annotation = getAnnotation(Optional.ValueProvider::class.java)
+                    ProviderParameter.Builder(annotation, env)
+                }
                 else -> MandatoryParameter.Builder()
             }
         }

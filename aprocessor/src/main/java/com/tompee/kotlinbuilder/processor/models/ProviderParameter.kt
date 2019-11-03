@@ -19,13 +19,13 @@ import javax.lang.model.type.TypeMirror
  * @property name actual parameter name
  * @property propertySpec property spec
  * @property setter optional setter name annotation
- * @property valueProvider valueProvider information
+ * @property providerName providerName information
  */
 internal data class ProviderParameter(
     override val name: String,
     override val propertySpec: PropertySpec,
     override val setter: Setter?,
-    val valueProvider: Optional.ValueProvider
+    val providerName: Optional.ValueProvider
 ) : Parameter(name, propertySpec, setter) {
 
     companion object {
@@ -42,7 +42,7 @@ internal data class ProviderParameter(
 
     @KotlinPoetMetadataPreview
     class Builder(
-        private val valueProvider: Optional.ValueProvider,
+        private val providerName: Optional.ValueProvider,
         env: ProcessingEnvironment,
         name: String = "",
         propertySpec: PropertySpec? = null,
@@ -54,16 +54,17 @@ internal data class ProviderParameter(
         private val providerTypeClassName = DefaultValueProvider::class.asClassName()
 
         override fun build(): Parameter {
-            val provider = valueProvider.getProvider()
+            val provider = providerName.getProvider()
             val typeSpec = (types.asElement(provider) as TypeElement).toTypeSpec(classInspector)
-            val providerReturnType = typeSpec.superinterfaces.keys.filterIsInstance<ParameterizedTypeName>()
-                .find { it.rawType == providerTypeClassName }?.typeArguments?.first()
-                ?: throw Throwable("$provider is a subtype of DefaultValueProvider")
+            val providerReturnType =
+                typeSpec.superinterfaces.keys.filterIsInstance<ParameterizedTypeName>()
+                    .find { it.rawType == providerTypeClassName }?.typeArguments?.first()
+                    ?: throw Throwable("$provider is a subtype of DefaultValueProvider")
 
             if (providerReturnType != propertySpec?.type) {
                 throw Throwable("Parameter $name type is not the same as the ValueProvider type ")
             }
-            return ProviderParameter(name, propertySpec!!, setter, valueProvider)
+            return ProviderParameter(name, propertySpec!!, setter, providerName)
         }
     }
 
@@ -95,7 +96,7 @@ internal data class ProviderParameter(
      * Builds an invoke method initializer statement
      */
     override fun createInitializeStatement(): String {
-        val typeName = valueProvider.getProvider()
+        val typeName = providerName.getProvider()
         return "val $name = $typeName().get()".wrapProof()
     }
 }
