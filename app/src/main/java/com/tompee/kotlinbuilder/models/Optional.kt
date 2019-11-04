@@ -13,6 +13,9 @@ data class Optional (
     val nullable: String?,
 
     @Optional
+    val enum : SampleEnum,
+
+    @Optional
     val unit : Unit,
 
     @Optional

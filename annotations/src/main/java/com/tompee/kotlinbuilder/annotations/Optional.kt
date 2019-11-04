@@ -37,4 +37,11 @@ annotation class Optional {
     @Retention(AnnotationRetention.SOURCE)
     @Target(AnnotationTarget.VALUE_PARAMETER)
     annotation class ValueProvider(val provider: KClass<out DefaultValueProvider<*>>)
+
+    /**
+     * Allows an optional enum parameter to provide the order of the default enum value
+     */
+    @Retention(AnnotationRetention.SOURCE)
+    @Target(AnnotationTarget.VALUE_PARAMETER)
+    annotation class Enumerable(val position: EnumPosition = EnumPosition.FIRST)
 }

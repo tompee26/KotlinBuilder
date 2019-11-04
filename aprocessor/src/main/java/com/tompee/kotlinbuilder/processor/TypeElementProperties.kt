@@ -1,4 +1,4 @@
-package com.tompee.kotlinbuilder.processor.models
+package com.tompee.kotlinbuilder.processor
 
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec

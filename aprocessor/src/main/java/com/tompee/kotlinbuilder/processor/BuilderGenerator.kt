@@ -6,7 +6,6 @@ import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 import com.tompee.kotlinbuilder.processor.models.DefaultParameter
 import com.tompee.kotlinbuilder.processor.models.Parameter
-import com.tompee.kotlinbuilder.processor.models.TypeElementProperties
 import java.io.File
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
@@ -26,7 +25,8 @@ internal class BuilderGenerator(
     /**
      * Type element property
      */
-    private val property = TypeElementProperties(env, element as TypeElement)
+    private val property =
+        TypeElementProperties(env, element as TypeElement)
 
     /**
      * Output builder class name

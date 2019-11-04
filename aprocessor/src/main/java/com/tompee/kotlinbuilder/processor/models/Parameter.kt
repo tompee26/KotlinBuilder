@@ -61,8 +61,8 @@ internal abstract class Parameter(
                     name = kParam.name
                     propertySpec = typeSpec.propertySpecs.find { it.name == kParam.name }
                     setter = jParam.getAnnotation(Setter::class.java)
-                }
-            }.map { it.build() }
+                }.build()
+            }
         }
 
         /**
@@ -70,7 +70,7 @@ internal abstract class Parameter(
          */
         private fun VariableElement.createBuilder(env: ProcessingEnvironment): Builder {
             return when {
-                getAnnotation(Optional::class.java) != null -> OptionalParameter.Builder()
+                getAnnotation(Optional::class.java) != null -> OptionalParameter.Builder(this)
                 /**
                  * These types are explicitly defined
                  */
@@ -79,6 +79,10 @@ internal abstract class Parameter(
                 getAnnotation(Optional.ValueProvider::class.java) != null -> {
                     val annotation = getAnnotation(Optional.ValueProvider::class.java)
                     ProviderParameter.Builder(annotation, env)
+                }
+                getAnnotation(Optional.Enumerable::class.java) != null -> {
+                    val annotation = getAnnotation(Optional.Enumerable::class.java)
+                    EnumParameter.Builder(this, annotation)
                 }
                 else -> MandatoryParameter.Builder()
             }

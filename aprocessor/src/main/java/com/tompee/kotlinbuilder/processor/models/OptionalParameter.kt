@@ -1,14 +1,17 @@
 package com.tompee.kotlinbuilder.processor.models
 
 import com.squareup.kotlinpoet.*
+import com.tompee.kotlinbuilder.annotations.EnumPosition
 import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
+import javax.lang.model.element.VariableElement
 
 /**
  * Represents an optional parameter in the target class constructor.
  * An optional parameter is valid if it passes on of the following rules:
- * 1. It is a value type
- * 2. It is a nullable type
+ * 1. It is a nullable type
+ * 2. It is an enum type
+ * 3. It is a value type
  *
  * @property name actual parameter name
  * @property propertySpec property spec
@@ -48,21 +51,28 @@ internal data class OptionalParameter(
     }
 
     class Builder(
+        private val element: VariableElement,
         name: String = "",
         propertySpec: PropertySpec? = null,
         setter: Setter? = null
     ) : Parameter.Builder(name, propertySpec, setter) {
 
         override fun build(): Parameter {
+            // Check if nullable
             val propertySpec = this.propertySpec ?: throw Throwable("Property spec not found")
             if (propertySpec.type.isNullable) {
                 return NullableParameter(name, propertySpec, setter)
             }
+            // Check if enum
+            if (EnumParameter.isValidEnum(element)) {
+                return EnumParameter(name, propertySpec, setter, EnumPosition.FIRST)
+            }
+
             val typeName = propertySpec.type.let {
                 if (it is ParameterizedTypeName) it.rawType else it
             }
             val initializer = optionalValueTypeMap[typeName]
-                ?: throw Throwable("Default value for paramter $name cannot be inferred")
+                ?: throw Throwable("Default value for parameter $name cannot be inferred")
 
             return OptionalParameter(name, propertySpec, setter, initializer)
         }
