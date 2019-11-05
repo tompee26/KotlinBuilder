@@ -20,41 +20,101 @@ dependencies {
 Define a `class` or `data class` and annotate with `@KBuilder`. `@KBuilder` has an optional `name` parameter where you can specify a custom builder class name. If not set, it is by default the target class appended with `Builder` (e.g. `PersonBuilder`)
 ```kotlin
 @KBuilder
-data class Person(val name : String)
+data class Person(val firstName : String, lastName: String, age: Int)
 ```
 
 Only the parameters defined in the primary constructor will be eligible for setter function generation.
-This will generate a builder class that allows you to use the builder pattern and Kotlin DSL.
+This will generate a builder class with the same package as the target class that allows you to use the builder pattern and Kotlin DSL.
 
-## Optional parameters
-By default, all parameters defined in the target class are mandatory parameters. Mandatory parameters are required during builder object instantiation. For example, using the `Person` class above, you need to provide the `name` to construct the builder object.
+## How to use it
+The generator creates two methods of builder instantiation. The first type creates the actual target object by accepting a lambda that allows you to call the builder methods.
 
 ```kotlin
-val person = PersonBuilder("name").build()
+val person = PersonBuilder("Benedict", "Cumberbatch", 40) {
+    // can set or override all parameters
+    firstName { "Michael" }
+    lastName { "Bolton" }
+    age { 40 }
+}
+```
+The second way returns the good old fashioned builder object.
+```kotlin
+val personbuilder = PersonBuilder("name", "Cumberbatch", 40)
+val person = personBuilder.build()
 ```
 
-To specify an optional parameter, annotate it with `@Optional`. The catch with optional parameters is that you have to define a default value provider mechanism to let the builder know what to use. Currently, there are 3 methods in doing so.
+Note: You have to compile the project after creating the target class to allow the processor to generate the code.
+
+## Optional parameters
+By default, all parameters defined in the target class are mandatory parameters. Mandatory parameters are required during builder object instantiation. For example, using the `Person` class above, you need to provide the `firstName`, `lastName` and `age` to construct the builder object.
+
+```kotlin
+val person = PersonBuilder("Benedict", "Cumberbatch", 40).build()
+```
+
+To specify an optional parameter, annotate it with `@Optional`. The catch with optional parameters is that you have to define a default value provider mechanism to let the builder know what to use.
+
+`@Optional` by default supports default value of certain types. When a parameter type is one of the following, then the corresponding default value is assigned when not explicitly overriden.
+
+
+| Kotlin Type | Default Value     |
+|:------------|:------------------|
+| Nullable    | null              |
+| Enum        | first item        |
+| Unit        | Unit              |
+| Byte        | 0                 |
+| Short       | 0                 |
+| Int         | 0                 |
+| Long        | 0L                |
+| Float       | 0f                |
+| Double      | 0.0               |
+| Boolean     | false             |
+| String      | ""                |
+| List        | `emptyList()`     |
+|MutableList  | `mutableListOf()` |
+| Map         | `emptyMap()`      |
+| MutableMap  | `mutableMapOf()`  |
+| Array       | `emptyArray()`    |
+| Set         | `emptySet()`      |
+| MutableSet  | 1mutableSetOf()`  |
+
+Using types other than those above will fail. However, other explicit mechanisms are available for specifying the default value.  
 
 ### Nullable
-`@Nullable` must be used in conjunction with `@Optional`. `@Nullable` requires that the target parameter type be nullable (e.g. String?). The builder will set this parameter by default to null.
+Use `@Optional.Nullable` to explicitly set a nullable type's initial value to null. If the type is not nullable, this will return an error. The builder will set this parameter by default to null.
 
 ```kotlin
 @KBuilder
 data class Person(
     val lastName : String,
     
-    @Optional
-    @Nullable
+    @Optional.Nullable
     val firstName: String?
 )
-...
+
 val person = PersonBuilder("last_name")
     .firstName { "first_name" }
     .build()
 ```
 
+### Enum
+Use `@Optional.Enumerable` to explicitly set an enum type's initial value. If the type is not an enum, this will return an error. By default, the default value is the first item (index 0). This can be modified by specifying the desired `EnumPosition`
+
+```kotlin
+@KBuilder
+data class Item(
+    val name: String,
+
+    @Optional.Enumerable(EnumPosition.LAST)
+    val type : ItemType
+)
+
+val item = Item("camera").build()
+```
+
 ### Value Provider
-`@ValueProvider` must be used in conjunction with `@Optional`. `@ValueProvider` requires an implementation of `DefaultValueProvider<T>` to generate a custom default value of your choice.
+Use `@Optional.ValueProvider` to explicitly provide a default value provider. `@Optional.ValueProvider` requires an implementation of `DefaultValueProvider<T>` to generate a custom default value during runtime. If the type is not consistent with the provider type, this will return an error.
+Note that the default value is evaluated at builder instance creation.
 
 ```kotlin
 class LastNameProvider : DefaultValueProvider<String> {
@@ -67,72 +127,58 @@ class LastNameProvider : DefaultValueProvider<String> {
 data class Person(
     val lastName: String,
     
-    @Optional
-    @ValueProvider(LastNameProvider::class)
+    @Optional.ValueProvider(LastNameProvider::class)
     val firstName : String
 )
-...
+
 val person = PersonBuilder("last_name")
     .firstName { "first_name" }
     .build()
 ```
 
-### Default Values
-`@Default` must be used in conjunction with `@Optional`. `@Default` requires the target to have a default value.
+### Kotlin Default Values
+Kotlin allows default values at constructors. To leverage this, use `@Optional.Default`.
 
 ```kotlin
 @KBuilder
 data class Person(
     val lastName : String,
     
-    @Optional
-    @Default
+    @Optional.Default
     val firstName: String = "Benedict"
 )
-...
+
 val person = PersonBuilder("last_name")
     .firstName { "first_name" }
     .build()
 ```
 
 #### Limitation
-Kotlin default parameters are not available as metadata nor are represented as a property on the class type. They are only represented as instructions in byte code. Because of this, there is no reliable way to detect if a parameter has a default value at compile time. You need to ensure that all parameters annotated with `@Default` really has a default value. The generated code can fail if the types don't match but may not be true for all cases.
+Kotlin default parameters are not available as metadata nor are represented as a property on the class type. They are only represented as instructions in byte code. Because of this, there is no reliable way to detect if a parameter has a default value at compile time. You need to ensure that all parameters annotated with `@Optional.Default` really has a default value. The generated code can fail if the types don't match but may not be true for all cases.
 
 #### Caution: Default value resolution
-Default values are represented as nullable types in the builder. When these nullable variables are modified, they will overwrite the default value upon call to build. However, named non-null parameters in Kotlin does not support null inputs. To work around this, a matrix of default value powerset is created that checks for all possible combinations of modified default values. The size of this powerset is 2^x where x is the number of default values. The worst case complexity of a builder with default values is therefore Log(2^n).
+Default values are represented as nullable types in the builder. When these nullable variables are modified, they will overwrite the default value upon call to build. However, named non-null parameters in Kotlin does not support null inputs. To work around this, a powerset of default values is generated that checks for all possible combinations of modified default values. The size of this powerset is 2^x where x is the number of default values. The worst case complexity of a builder with default values is therefore Log(2^n).
 
 ## Custom setter name
 `@Setter` can be used to provide a custom setter name function to a parameter. By default, the parameter name will be used.
 
 ```kotlin
-@Builder
+@KBuilder
 data class Person(
     @Setter("setName")
     val name : String
 )
-...
+
 val person = PersonBuilder("name").setName { "newName" }.build()
 ```
 
-## How it works
-The generator creates two methods of builder instantiation. The first type creates the actual target object by accepting a lambda that allows you to call the builder methods.
-
-```kotlin
-val person = PersonBuilder("name") { // <- set the optional and even the override the mandatory parameters
-    firstName { "Michael" }
-    lastName { "Bolton" }
-    age { 12 }
-}
-```
-The second way returns the good old fashioned builder object.
-```kotlin
-val personbuilder = PersonBuilder("name")
-```
-
 ## Coming soon!
-1. More ways to specify default values
-2. More robust code generation and error detection
-3. Factory pattern? `Lazy` support?
+1. More default value types
+2. More ways to specify default values
+3. Set provider arguments to allow `Lazy` evaluation
+4. Builder class supertypes
+
+Contributions are welcome!
 
 ## License
 ```
