@@ -76,7 +76,7 @@ To specify an optional parameter, annotate it with `@Optional`. The catch with o
 | MutableMap  | `mutableMapOf()`  |
 | Array       | `emptyArray()`    |
 | Set         | `emptySet()`      |
-| MutableSet  | 1mutableSetOf()`  |
+| MutableSet  | `mutableSetOf()`  |
 
 Using types other than those above will fail. However, other explicit mechanisms are available for specifying the default value.  
 
