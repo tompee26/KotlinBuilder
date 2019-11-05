@@ -44,4 +44,13 @@ annotation class Optional {
     @Retention(AnnotationRetention.SOURCE)
     @Target(AnnotationTarget.VALUE_PARAMETER)
     annotation class Enumerable(val position: EnumPosition = EnumPosition.FIRST)
+
+    /**
+     * Annotates implementation classes of [DefaultValueProvider] to create a default value binding.
+     *
+     * The implementation class must have a no-arg constructor since the builder will instantiate it.
+     */
+    @Retention(AnnotationRetention.SOURCE)
+    @Target(AnnotationTarget.CLASS)
+    annotation class Provides
 }

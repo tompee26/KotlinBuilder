@@ -52,6 +52,7 @@ internal data class OptionalParameter(
 
     class Builder(
         private val element: VariableElement,
+        private val providerMap: Map<TypeName, TypeName>,
         name: String = "",
         propertySpec: PropertySpec? = null,
         setter: Setter? = null
@@ -68,13 +69,20 @@ internal data class OptionalParameter(
                 return EnumParameter(name, propertySpec, setter, EnumPosition.FIRST)
             }
 
+            // Check from value type mapping
             val typeName = propertySpec.type.let {
                 if (it is ParameterizedTypeName) it.rawType else it
             }
             val initializer = optionalValueTypeMap[typeName]
-                ?: throw Throwable("Default value for parameter $name cannot be inferred")
+            if (initializer != null) {
+                return OptionalParameter(name, propertySpec, setter, initializer)
+            }
 
-            return OptionalParameter(name, propertySpec, setter, initializer)
+            // Check from provider map
+            val providerType = providerMap[propertySpec.type]
+                ?: throw Throwable("Default value for parameter $name cannot be inferred")
+            val providerInitializer = Initializer { "$providerType().get()" }
+            return OptionalParameter(name, propertySpec, setter, providerInitializer)
         }
     }
 

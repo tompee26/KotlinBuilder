@@ -16,11 +16,13 @@ import javax.lang.model.element.TypeElement
  *
  * @property env processing environment
  * @param element the input element
+ * @property providerMap default value provider map
  */
-@UseExperimental(KotlinPoetMetadataPreview::class)
+@KotlinPoetMetadataPreview
 internal class BuilderGenerator(
     private val env: ProcessingEnvironment,
-    element: Element
+    element: Element,
+    private val providerMap: Map<TypeName, TypeName>
 ) {
     /**
      * Type element property
@@ -37,7 +39,7 @@ internal class BuilderGenerator(
      * Constructor parameter list
      */
     private val parameterList by lazy {
-        Parameter.parse(element as TypeElement, property.getTypeSpec(), env)
+        Parameter.parse(element as TypeElement, property.getTypeSpec(), env, providerMap)
     }
 
     /**

@@ -44,11 +44,13 @@ internal abstract class Parameter(
          * @param element builder class type element
          * @param typeSpec builder class type spec
          * @param env processing environment
+         * @param providerMap default value provider map
          */
         fun parse(
             element: TypeElement,
             typeSpec: TypeSpec,
-            env: ProcessingEnvironment
+            env: ProcessingEnvironment,
+            providerMap: Map<TypeName, TypeName>
         ): List<Parameter> {
             val kotlinCtr = typeSpec.primaryConstructor
                 ?: throw Throwable("No kotlin primary constructor defined")
@@ -57,7 +59,7 @@ internal abstract class Parameter(
                 ?: throw Throwable("No java constructor found.")
 
             return kotlinCtr.parameters.zip(javaCtr.parameters) { kParam, jParam ->
-                jParam.createBuilder(env).apply {
+                jParam.createBuilder(env, providerMap).apply {
                     name = kParam.name
                     propertySpec = typeSpec.propertySpecs.find { it.name == kParam.name }
                     setter = jParam.getAnnotation(Setter::class.java)
@@ -68,9 +70,13 @@ internal abstract class Parameter(
         /**
          * Returns the appropriate builder depending on annotations
          */
-        private fun VariableElement.createBuilder(env: ProcessingEnvironment): Builder {
+        private fun VariableElement.createBuilder(
+            env: ProcessingEnvironment,
+            providerMap: Map<TypeName, TypeName>
+        ): Builder {
             return when {
-                getAnnotation(Optional::class.java) != null -> OptionalParameter.Builder(this)
+                getAnnotation(Optional::class.java) != null ->
+                    OptionalParameter.Builder(this, providerMap)
                 /**
                  * These types are explicitly defined
                  */
