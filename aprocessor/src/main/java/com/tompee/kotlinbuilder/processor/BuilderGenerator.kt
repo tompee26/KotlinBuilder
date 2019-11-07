@@ -92,12 +92,13 @@ internal class BuilderGenerator(
     private fun createCompanionObject(): TypeSpec {
         //region First invoke overload
         val createOverload = FunSpec.builder("invoke")
-            .addModifiers(KModifier.INTERNAL, KModifier.OPERATOR)
+            .addModifiers(KModifier.INTERNAL, KModifier.OPERATOR, KModifier.INLINE)
             .returns(property.getTypeName())
             .addParameters(parameterList.filterNot { it.isOptional() }.map { it.toInvokeParamSpec() })
             .addParameter(
                 "builderInit",
-                LambdaTypeName.get(builderClassName, returnType = Unit::class.java.asTypeName())
+                LambdaTypeName.get(builderClassName, returnType = Unit::class.java.asTypeName()),
+                KModifier.CROSSINLINE
             )
 
         parameterList.filter { it.isOptional() }
