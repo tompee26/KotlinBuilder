@@ -139,6 +139,12 @@ internal class BuilderGenerator(
         val builder = FunSpec.builder("build")
             .returns(property.getTypeName())
 
+        /**
+         * Add initializers
+         */
+        parameterList.mapNotNull { it.toBuildInitializer() }
+            .forEach { builder.addStatement(it) }
+
         val defaultParameters = parameterList.filterIsInstance<DefaultParameter>()
         if (defaultParameters.isEmpty()) {
             builder.addStatement(

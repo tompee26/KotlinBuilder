@@ -81,8 +81,7 @@ internal data class OptionalParameter(
             // Check from provider map
             val providerType = providerMap[propertySpec.type]
                 ?: throw Throwable("Default value for parameter $name cannot be inferred")
-            val providerInitializer = Initializer { "$providerType().get()" }
-            return OptionalParameter(name, propertySpec, setter, providerInitializer)
+            return ProviderParameter(name, propertySpec, setter, providerType)
         }
     }
 

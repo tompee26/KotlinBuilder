@@ -116,6 +116,11 @@ internal abstract class Parameter(
     abstract fun createInitializeStatement(): String
 
     /**
+     * Creates a variable that will shadow the global that will contain the non-null initializer
+     */
+    open fun toBuildInitializer(): String? = null
+
+    /**
      * Generates the builder method
      */
     fun toBuilderFunSpec(className: ClassName): FunSpec {

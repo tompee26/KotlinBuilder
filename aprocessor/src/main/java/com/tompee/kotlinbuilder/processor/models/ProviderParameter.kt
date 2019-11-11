@@ -25,7 +25,7 @@ internal data class ProviderParameter(
     override val name: String,
     override val propertySpec: PropertySpec,
     override val setter: Setter?,
-    val providerName: Optional.ValueProvider
+    val typeName: TypeName
 ) : Parameter(name, propertySpec, setter) {
 
     companion object {
@@ -64,7 +64,7 @@ internal data class ProviderParameter(
             if (providerReturnType != propertySpec?.type) {
                 throw Throwable("Parameter $name type (${propertySpec?.type}) is not the same as the ValueProvider type ($providerReturnType)")
             }
-            return ProviderParameter(name, propertySpec!!, setter, providerName)
+            return ProviderParameter(name, propertySpec!!, setter, provider.asTypeName())
         }
     }
 
@@ -72,14 +72,14 @@ internal data class ProviderParameter(
      * Builds a constructor parameter spec
      */
     override fun toCtrParamSpec(): ParameterSpec {
-        return ParameterSpec.builder(name, propertySpec.type, KModifier.PRIVATE).build()
+        return ParameterSpec.builder(name, propertySpec.type.copy(true), KModifier.PRIVATE).build()
     }
 
     /**
      * Builds a constructor parameter spec
      */
     override fun toPropertySpec(): PropertySpec {
-        return PropertySpec.builder(name, propertySpec.type)
+        return PropertySpec.builder(name, propertySpec.type.copy(true))
             .initializer(name)
             .mutable()
             .build()
@@ -96,7 +96,13 @@ internal data class ProviderParameter(
      * Builds an invoke method initializer statement
      */
     override fun createInitializeStatement(): String {
-        val typeName = providerName.getProvider()
-        return "val $name = $typeName().get()".wrapProof()
+        return "val $name : ${propertySpec.type.copy(true)} = null".wrapProof()
+    }
+
+    /**
+     * Creates a variable that will shadow the global that will contain the non-null initializer
+     */
+    override fun toBuildInitializer(): String? {
+        return "val $name = this.$name ?: $typeName().get()".wrapProof()
     }
 }
