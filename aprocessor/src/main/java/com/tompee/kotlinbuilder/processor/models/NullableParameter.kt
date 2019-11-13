@@ -19,17 +19,14 @@ internal data class NullableParameter(
     override val setter: Setter?
 ) : Parameter(name, propertySpec, setter) {
 
-    class Builder(
-        name: String = "",
-        propertySpec: PropertySpec? = null,
-        setter: Setter? = null
-    ) : Parameter.Builder(name, propertySpec, setter) {
+    companion object {
 
-        override fun build(): Parameter {
-            if (propertySpec?.type?.isNullable != true) {
-                throw Throwable("Parameter $name is annotated with @Optional.Nullable but its type is not nullable. Actual type is ${propertySpec?.type}")
+        fun create(name: String, propertySpec: PropertySpec, setter: Setter?): Parameter {
+            if (!propertySpec.type.isNullable) {
+                throw Throwable("Parameter $name is annotated with @Optional.Nullable but its type is not nullable. Actual type is ${propertySpec.type}")
             }
-            return NullableParameter(name, propertySpec!!, setter)
+
+            return NullableParameter(name, propertySpec, setter)
         }
     }
 

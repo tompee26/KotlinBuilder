@@ -1,7 +1,6 @@
 package com.tompee.kotlinbuilder.processor.models
 
 import com.squareup.kotlinpoet.*
-import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.sun.tools.javac.code.Type
 import com.tompee.kotlinbuilder.annotations.EnumPosition
 import com.tompee.kotlinbuilder.annotations.Optional
@@ -36,22 +35,17 @@ internal data class EnumParameter(
             val enumTypeName = java.lang.Enum::class.java.asTypeName()
             return superTypeName == enumTypeName
         }
-    }
 
-    @KotlinPoetMetadataPreview
-    class Builder(
-        private val element: VariableElement,
-        private val enumerable: Optional.Enumerable,
-        name: String = "",
-        propertySpec: PropertySpec? = null,
-        setter: Setter? = null
-    ) : Parameter.Builder(name, propertySpec, setter) {
-
-        override fun build(): Parameter {
+        fun create(
+            element: VariableElement,
+            name: String,
+            propertySpec: PropertySpec,
+            setter: Setter?
+        ): Parameter {
             if (!isValidEnum(element)) throw Throwable("Parameter $name type is not enum")
 
-            val position = enumerable.position
-            return EnumParameter(name, propertySpec!!, setter, position)
+            val enumerable = element.getAnnotation(Optional.Enumerable::class.java)
+            return EnumParameter(name, propertySpec, setter, enumerable.position)
         }
     }
 

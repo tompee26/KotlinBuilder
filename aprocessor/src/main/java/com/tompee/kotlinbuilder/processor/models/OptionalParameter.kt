@@ -1,9 +1,11 @@
 package com.tompee.kotlinbuilder.processor.models
 
 import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.tompee.kotlinbuilder.annotations.EnumPosition
 import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
+import com.tompee.kotlinbuilder.processor.processor.ProviderMap
 import javax.lang.model.element.VariableElement
 
 /**
@@ -17,6 +19,7 @@ import javax.lang.model.element.VariableElement
  * @property propertySpec property spec
  * @property setter optional setter name annotation
  */
+@KotlinPoetMetadataPreview
 internal data class OptionalParameter(
     override val name: String,
     override val propertySpec: PropertySpec,
@@ -48,22 +51,20 @@ internal data class OptionalParameter(
             SET to Initializer { "emptySet()" },
             MUTABLE_SET to Initializer { "mutableSetOf()" }
         )
-    }
 
-    class Builder(
-        private val element: VariableElement,
-        private val providerMap: Map<TypeName, TypeName>,
-        name: String = "",
-        propertySpec: PropertySpec? = null,
-        setter: Setter? = null
-    ) : Parameter.Builder(name, propertySpec, setter) {
+        fun create(
+            element: VariableElement,
+            providerMap: ProviderMap,
+            name: String,
+            propertySpec: PropertySpec,
+            setter: Setter?
+        ): Parameter {
 
-        override fun build(): Parameter {
             // Check if nullable
-            val propertySpec = this.propertySpec ?: throw Throwable("Property spec not found")
             if (propertySpec.type.isNullable) {
                 return NullableParameter(name, propertySpec, setter)
             }
+
             // Check if enum
             if (EnumParameter.isValidEnum(element)) {
                 return EnumParameter(name, propertySpec, setter, EnumPosition.FIRST)

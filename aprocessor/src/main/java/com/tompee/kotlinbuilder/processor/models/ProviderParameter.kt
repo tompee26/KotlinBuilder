@@ -1,17 +1,38 @@
 package com.tompee.kotlinbuilder.processor.models
 
+import com.squareup.inject.assisted.Assisted
+import com.squareup.inject.assisted.AssistedInject
 import com.squareup.kotlinpoet.*
-import com.squareup.kotlinpoet.classinspector.elements.ElementsClassInspector
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
+import com.squareup.kotlinpoet.metadata.specs.ClassInspector
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import com.tompee.kotlinbuilder.annotations.DefaultValueProvider
 import com.tompee.kotlinbuilder.annotations.Optional
 import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
-import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.TypeElement
+import javax.lang.model.element.VariableElement
 import javax.lang.model.type.MirroredTypeException
 import javax.lang.model.type.TypeMirror
+import javax.lang.model.util.Types
+
+internal fun Optional.ValueProvider.getProvider(): TypeMirror {
+    try {
+        this.provider
+    } catch (mte: MirroredTypeException) {
+        return mte.typeMirror
+    }
+    throw Throwable("DefaultValueProvider type cannot be determined")
+}
+
+internal fun TypeSpec.getInterfaceType(): ParameterizedTypeName {
+    return superinterfaces
+        .map { it.key }
+        .filterIsInstance<ParameterizedTypeName>()
+        .find { it.rawType == DefaultValueProvider::class.asClassName() }
+        ?: throw Throwable("$name is not a subclass of DefaultValueProvider")
+}
+
 
 /**
  * Represents an optional parameter with default value provider in the target class constructor.
@@ -19,8 +40,9 @@ import javax.lang.model.type.TypeMirror
  * @property name actual parameter name
  * @property propertySpec property spec
  * @property setter optional setter name annotation
- * @property providerName providerName information
+ * @property typeName provider type name information
  */
+@KotlinPoetMetadataPreview
 internal data class ProviderParameter(
     override val name: String,
     override val propertySpec: PropertySpec,
@@ -28,43 +50,35 @@ internal data class ProviderParameter(
     val typeName: TypeName
 ) : Parameter(name, propertySpec, setter) {
 
-    companion object {
+    class Builder @AssistedInject constructor(
+        private val classInspector: ClassInspector,
+        private val types: Types,
+        @Assisted private val element: VariableElement,
+        @Assisted private val name: String,
+        @Assisted private val propertySpec: PropertySpec,
+        @Assisted private val setter: Setter?
+    ) {
 
-        private fun Optional.ValueProvider.getProvider(): TypeMirror {
-            try {
-                this.provider
-            } catch (mte: MirroredTypeException) {
-                return mte.typeMirror
-            }
-            throw Throwable("DefaultValueProvider type cannot be determined")
+        @AssistedInject.Factory
+        interface Factory {
+
+            fun create(
+                element: VariableElement,
+                name: String,
+                propertySpec: PropertySpec,
+                setter: Setter?
+            ): Builder
         }
-    }
 
-    @KotlinPoetMetadataPreview
-    class Builder(
-        private val providerName: Optional.ValueProvider,
-        env: ProcessingEnvironment,
-        name: String = "",
-        propertySpec: PropertySpec? = null,
-        setter: Setter? = null
-    ) : Parameter.Builder(name, propertySpec, setter) {
-
-        private val types = env.typeUtils
-        private val classInspector = ElementsClassInspector.create(env.elementUtils, env.typeUtils)
-        private val providerTypeClassName = DefaultValueProvider::class.asClassName()
-
-        override fun build(): Parameter {
-            val provider = providerName.getProvider()
+        fun build(): Parameter {
+            val provider =
+                element.getAnnotation(Optional.ValueProvider::class.java).getProvider()
             val typeSpec = (types.asElement(provider) as TypeElement).toTypeSpec(classInspector)
-            val providerReturnType =
-                typeSpec.superinterfaces.keys.filterIsInstance<ParameterizedTypeName>()
-                    .find { it.rawType == providerTypeClassName }?.typeArguments?.first()
-                    ?: throw Throwable("$provider is not a subtype of DefaultValueProvider")
-
-            if (providerReturnType != propertySpec?.type) {
-                throw Throwable("Parameter $name type (${propertySpec?.type}) is not the same as the ValueProvider type ($providerReturnType)")
+            val providerType = typeSpec.getInterfaceType().typeArguments.first()
+            if (providerType != propertySpec.type) {
+                throw Throwable("Parameter $name type (${propertySpec.type}) is not the same as the ValueProvider type ($providerType)")
             }
-            return ProviderParameter(name, propertySpec!!, setter, provider.asTypeName())
+            return ProviderParameter(name, propertySpec, setter, provider.asTypeName())
         }
     }
 

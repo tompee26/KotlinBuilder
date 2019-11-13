@@ -1,11 +1,15 @@
-package com.tompee.kotlinbuilder.processor
+package com.tompee.kotlinbuilder.processor.processor
 
 import com.marcinmoskala.math.powerset
+import com.squareup.inject.assisted.Assisted
+import com.squareup.inject.assisted.AssistedInject
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
+import com.tompee.kotlinbuilder.processor.BuilderProcessor
+import com.tompee.kotlinbuilder.processor.TypeElementProperties
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 import com.tompee.kotlinbuilder.processor.models.DefaultParameter
-import com.tompee.kotlinbuilder.processor.models.Parameter
+import com.tompee.kotlinbuilder.processor.parser.ParameterParser
 import java.io.File
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
@@ -13,17 +17,20 @@ import javax.lang.model.element.TypeElement
 
 /**
  * Generates a builder code and file from the given [Element]
- *
- * @property env processing environment
- * @param element the input element
- * @property providerMap default value provider map
  */
 @KotlinPoetMetadataPreview
-internal class BuilderGenerator(
+internal class BuilderGenerator @AssistedInject constructor(
+    private val parameterParser: ParameterParser,
     private val env: ProcessingEnvironment,
-    element: Element,
-    private val providerMap: Map<TypeName, TypeName>
+    @Assisted private val element: Element,
+    @Assisted private val providerMap: ProviderMap
 ) {
+
+    @AssistedInject.Factory
+    interface Factory {
+        fun create(element: Element, providerMap: ProviderMap): BuilderGenerator
+    }
+
     /**
      * Type element property
      */
@@ -39,7 +46,7 @@ internal class BuilderGenerator(
      * Constructor parameter list
      */
     private val parameterList by lazy {
-        Parameter.parse(element as TypeElement, property.getTypeSpec(), env, providerMap)
+        parameterParser.parse(element as TypeElement, property.getTypeSpec(), providerMap)
     }
 
     /**

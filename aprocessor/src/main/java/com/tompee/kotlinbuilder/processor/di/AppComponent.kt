@@ -8,7 +8,7 @@ import javax.annotation.processing.ProcessingEnvironment
 import javax.inject.Singleton
 
 @Singleton
-@Component(modules = [ProcessingModule::class])
+@Component(modules = [ProcessingModule::class, AssistedInjectModule::class])
 @KotlinPoetMetadataPreview
 internal interface AppComponent {
 

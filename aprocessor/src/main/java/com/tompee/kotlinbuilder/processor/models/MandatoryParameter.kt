@@ -18,14 +18,9 @@ internal data class MandatoryParameter(
     override val setter: Setter?
 ) : Parameter(name, propertySpec, setter) {
 
-    class Builder(
-        name: String = "",
-        propertySpec: PropertySpec? = null,
-        setter: Setter? = null
-    ) : Parameter.Builder(name, propertySpec, setter) {
-
-        override fun build(): Parameter {
-            return MandatoryParameter(name, propertySpec!!, setter)
+    companion object {
+        fun create(name: String, propertySpec: PropertySpec, setter: Setter?): Parameter {
+            return MandatoryParameter(name, propertySpec, setter)
         }
     }
 

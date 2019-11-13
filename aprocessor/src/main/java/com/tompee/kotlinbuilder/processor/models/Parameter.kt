@@ -1,15 +1,8 @@
 package com.tompee.kotlinbuilder.processor.models
 
 import com.squareup.kotlinpoet.*
-import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
-import com.tompee.kotlinbuilder.annotations.Optional
 import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
-import javax.annotation.processing.ProcessingEnvironment
-import javax.lang.model.element.ElementKind
-import javax.lang.model.element.ExecutableElement
-import javax.lang.model.element.TypeElement
-import javax.lang.model.element.VariableElement
 
 /**
  * A class that represents a constructor parameter
@@ -35,65 +28,65 @@ internal abstract class Parameter(
         abstract fun build(): Parameter
     }
 
-    @KotlinPoetMetadataPreview
-    companion object {
-
-        /**
-         * Parses the list of parameters from a type element
-         *
-         * @param element builder class type element
-         * @param typeSpec builder class type spec
-         * @param env processing environment
-         * @param providerMap default value provider map
-         */
-        fun parse(
-            element: TypeElement,
-            typeSpec: TypeSpec,
-            env: ProcessingEnvironment,
-            providerMap: Map<TypeName, TypeName>
-        ): List<Parameter> {
-            val kotlinCtr = typeSpec.primaryConstructor
-                ?: throw Throwable("No kotlin primary constructor defined")
-            val javaCtr = element.enclosedElements
-                .firstOrNull { it.kind == ElementKind.CONSTRUCTOR } as? ExecutableElement
-                ?: throw Throwable("No java constructor found.")
-
-            return kotlinCtr.parameters.zip(javaCtr.parameters) { kParam, jParam ->
-                jParam.createBuilder(env, providerMap).apply {
-                    name = kParam.name
-                    propertySpec = typeSpec.propertySpecs.find { it.name == kParam.name }
-                    setter = jParam.getAnnotation(Setter::class.java)
-                }.build()
-            }
-        }
-
-        /**
-         * Returns the appropriate builder depending on annotations
-         */
-        private fun VariableElement.createBuilder(
-            env: ProcessingEnvironment,
-            providerMap: Map<TypeName, TypeName>
-        ): Builder {
-            return when {
-                getAnnotation(Optional::class.java) != null ->
-                    OptionalParameter.Builder(this, providerMap)
-                /**
-                 * These types are explicitly defined
-                 */
-                getAnnotation(Optional.Nullable::class.java) != null -> NullableParameter.Builder()
-                getAnnotation(Optional.Default::class.java) != null -> DefaultParameter.Builder()
-                getAnnotation(Optional.ValueProvider::class.java) != null -> {
-                    val annotation = getAnnotation(Optional.ValueProvider::class.java)
-                    ProviderParameter.Builder(annotation, env)
-                }
-                getAnnotation(Optional.Enumerable::class.java) != null -> {
-                    val annotation = getAnnotation(Optional.Enumerable::class.java)
-                    EnumParameter.Builder(this, annotation)
-                }
-                else -> MandatoryParameter.Builder()
-            }
-        }
-    }
+//    @KotlinPoetMetadataPreview
+//    companion object {
+//
+//        /**
+//         * Parses the list of parameters from a type element
+//         *
+//         * @param element builder class type element
+//         * @param typeSpec builder class type spec
+//         * @param env processing environment
+//         * @param providerMap default value provider map
+//         */
+//        fun parse(
+//            element: TypeElement,
+//            typeSpec: TypeSpec,
+//            env: ProcessingEnvironment,
+//            providerMap: Map<TypeName, TypeName>
+//        ): List<Parameter> {
+//            val kotlinCtr = typeSpec.primaryConstructor
+//                ?: throw Throwable("No kotlin primary constructor defined")
+//            val javaCtr = element.enclosedElements
+//                .firstOrNull { it.kind == ElementKind.CONSTRUCTOR } as? ExecutableElement
+//                ?: throw Throwable("No java constructor found.")
+//
+//            return kotlinCtr.parameters.zip(javaCtr.parameters) { kParam, jParam ->
+//                jParam.createBuilder(env, providerMap).apply {
+//                    name = kParam.name
+//                    propertySpec = typeSpec.propertySpecs.find { it.name == kParam.name }
+//                    setter = jParam.getAnnotation(Setter::class.java)
+//                }.build()
+//            }
+//        }
+//
+//        /**
+//         * Returns the appropriate builder depending on annotations
+//         */
+//        private fun VariableElement.createBuilder(
+//            env: ProcessingEnvironment,
+//            providerMap: Map<TypeName, TypeName>
+//        ): Builder {
+//            return when {
+//                getAnnotation(Optional::class.java) != null ->
+//                    OptionalParameter.Builder(this, providerMap)
+//                /**
+//                 * These types are explicitly defined
+//                 */
+//                getAnnotation(Optional.Nullable::class.java) != null -> NullableParameter.Builder()
+//                getAnnotation(Optional.Default::class.java) != null -> DefaultParameter.Builder()
+//                getAnnotation(Optional.ValueProvider::class.java) != null -> {
+//                    val annotation = getAnnotation(Optional.ValueProvider::class.java)
+//                    ProviderParameter.Builder(annotation, env)
+//                }
+//                getAnnotation(Optional.Enumerable::class.java) != null -> {
+//                    val annotation = getAnnotation(Optional.Enumerable::class.java)
+//                    EnumParameter.Builder(this, annotation)
+//                }
+//                else -> MandatoryParameter.Builder()
+//            }
+//        }
+//    }
 
     /**
      * Builds a constructor parameter spec
