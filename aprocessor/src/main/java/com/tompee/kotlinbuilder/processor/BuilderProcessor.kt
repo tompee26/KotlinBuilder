@@ -5,6 +5,8 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.tompee.kotlinbuilder.annotations.KBuilder
 import com.tompee.kotlinbuilder.annotations.Optional
+import com.tompee.kotlinbuilder.processor.di.AppComponent
+import com.tompee.kotlinbuilder.processor.di.DaggerAppComponent
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessor
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType
 import javax.annotation.processing.*
@@ -19,6 +21,8 @@ import javax.tools.Diagnostic
 @SupportedOptions(BuilderProcessor.KAPT_KOTLIN_GENERATED_OPTION_NAME)
 @IncrementalAnnotationProcessor(IncrementalAnnotationProcessorType.ISOLATING)
 class BuilderProcessor : AbstractProcessor() {
+
+    private lateinit var appComponent: AppComponent
 
     companion object {
         const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"
@@ -37,6 +41,9 @@ class BuilderProcessor : AbstractProcessor() {
     override fun getSupportedSourceVersion(): SourceVersion = SourceVersion.latest()
 
     override fun process(set: MutableSet<out TypeElement>?, env: RoundEnvironment?): Boolean {
+        appComponent = DaggerAppComponent.factory().create(processingEnv)
+        appComponent.inject(this)
+
         val providerMap = env?.getElementsAnnotatedWith(Optional.Provides::class.java)
             ?.toList()?.let { buildProviderMap(it) } ?: emptyMap()
 
