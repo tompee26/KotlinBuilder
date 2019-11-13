@@ -80,9 +80,15 @@ internal data class OptionalParameter(
             }
 
             // Check from provider map
-            val providerType = providerMap[propertySpec.type]
+            val info = providerMap[propertySpec.type]
                 ?: throw Throwable("Default value for parameter $name cannot be inferred")
-            return ProviderParameter(name, propertySpec, setter, providerType)
+            return ProviderParameter(
+                name,
+                propertySpec,
+                setter,
+                info.element.asType().asTypeName(),
+                info.typeSpec.kind == TypeSpec.Kind.OBJECT
+            )
         }
     }
 

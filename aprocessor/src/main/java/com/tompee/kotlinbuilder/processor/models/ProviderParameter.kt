@@ -47,7 +47,8 @@ internal data class ProviderParameter(
     override val name: String,
     override val propertySpec: PropertySpec,
     override val setter: Setter?,
-    val typeName: TypeName
+    val typeName: TypeName,
+    val isStatic: Boolean = false
 ) : Parameter(name, propertySpec, setter) {
 
     class Builder @AssistedInject constructor(
@@ -78,7 +79,7 @@ internal data class ProviderParameter(
             if (providerType != propertySpec.type) {
                 throw Throwable("Parameter $name type (${propertySpec.type}) is not the same as the ValueProvider type ($providerType)")
             }
-            return ProviderParameter(name, propertySpec, setter, provider.asTypeName())
+            return ProviderParameter(name, propertySpec, setter, provider.asTypeName(), typeSpec.kind == TypeSpec.Kind.OBJECT)
         }
     }
 
@@ -117,6 +118,7 @@ internal data class ProviderParameter(
      * Creates a variable that will shadow the global that will contain the non-null initializer
      */
     override fun toBuildInitializer(): String? {
-        return "val $name = this.$name ?: $typeName().get()".wrapProof()
+        return if (isStatic) "val $name = this.$name ?: $typeName.get()".wrapProof()
+        else "val $name = this.$name ?: $typeName().get()".wrapProof()
     }
 }
