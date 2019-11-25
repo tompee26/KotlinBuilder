@@ -10,10 +10,12 @@ Note: `kapt` is needed to process annotations
 
 In your build.gradle, add the following dependencies:
 
+Note: starting 0.2.0, artifacts have been renamed (although previous versions with the new artifact is also reuploaded).
+
 ```
 dependencies {
-   implementation "com.tompee.kotlinbuilder:annotations:$latest_version"
-   kapt "com.tompee.kotlinbuilder:processor:$latest_version"
+   implementation "com.tompee.kotlinbuilder:runtime:$latest_version"
+   kapt "com.tompee.kotlinbuilder:compiler:$latest_version"
 }
 ```
 
@@ -37,7 +39,7 @@ val person = PersonBuilder("Benedict", "Cumberbatch", 40) {
     age { 40 }
 }
 ```
-The second way returns the good old fashioned builder object.
+The other way returns the good old fashioned builder object.
 ```kotlin
 val personbuilder = PersonBuilder("name", "Cumberbatch", 40)
 val person = personBuilder.build()
@@ -78,6 +80,19 @@ To specify an optional parameter, annotate it with `@Optional`. The catch with o
 | Set         | `emptySet()`      |
 | MutableSet  | `mutableSetOf()`  |
 
+A default value provider is also available. When defined, it will always use this default value in conjunction with `@Optional`. To create a default value provider, annotate a class with `@Optional.Provides` and implement `DefaultValueProvider<T>`. To optimize resolution of this default value, an `object` can be used instead.
+
+```kotlin
+@Optional.Provides
+object LastNameProvider : DefaultValueProvider<String> { // Or class if it requires runtime information.
+    override fun get() : String {
+        return "last_name"
+    } 
+}
+```
+
+Default values are evaluated when build is called (lazily).
+
 Using types other than those above will fail. However, other explicit mechanisms are available for specifying the default value.  
 
 ### Nullable
@@ -113,7 +128,7 @@ val item = Item("camera").build()
 ```
 
 ### Value Provider
-Use `@Optional.ValueProvider` to explicitly provide a default value provider. `@Optional.ValueProvider` requires an implementation of `DefaultValueProvider<T>` to generate a custom default value during runtime. If the type is not consistent with the provider type, this will return an error.
+Use `@Optional.ValueProvider` to explicitly provide a default value provider. `@Optional.ValueProvider` requires an implementation of `DefaultValueProvider<T>` to generate a custom default value during runtime. If the type is not consistent with the provider type, this will return an error. This will override any given `@Optional.Provides`
 Note that the default value is evaluated at builder instance creation.
 
 ```kotlin
