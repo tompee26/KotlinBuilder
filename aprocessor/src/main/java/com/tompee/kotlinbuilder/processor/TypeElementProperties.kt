@@ -19,7 +19,7 @@ import javax.lang.model.type.TypeMirror
  * @property env processing environment
  * @property typeElement the input type element
  */
-@UseExperimental(KotlinPoetMetadataPreview::class)
+@KotlinPoetMetadataPreview
 internal class TypeElementProperties(
     private val env: ProcessingEnvironment,
     private val typeElement: TypeElement

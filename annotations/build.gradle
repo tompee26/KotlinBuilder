@@ -8,11 +8,11 @@ targetCompatibility = JavaVersion.VERSION_1_7
 publish {
 
     def groupProjectID = 'com.tompee.kotlinbuilder'
-    def artifactProjectID = 'annotations'
+    def artifactProjectID = 'runtime'
     def publishVersionID = project.publishVersion
 
     userOrg = 'tompee26'
-    repoName = 'Android'
+    repoName = 'KotlinBuilder'
     groupId = groupProjectID
     artifactId = artifactProjectID
     publishVersion = publishVersionID

@@ -10,20 +10,16 @@ targetCompatibility = JavaVersion.VERSION_1_7
 publish {
 
     def groupProjectID = 'com.tompee.kotlinbuilder'
-    def artifactProjectID = 'processor'
+    def artifactProjectID = 'compiler'
     def publishVersionID = project.publishVersion
 
     userOrg = 'tompee26'
-    repoName = 'Android'
+    repoName = 'KotlinBuilder'
     groupId = groupProjectID
     artifactId = artifactProjectID
     publishVersion = publishVersionID
     desc = 'Annotation processor package for Kotlin Builder'
     website = 'https://github.com/tompee26/KotlinBuilder'
-}
-
-kapt {
-    generateStubs = true
 }
 
 sourceSets {
@@ -45,11 +41,11 @@ dependencies {
     implementation project(':annotations')
     implementation files("${toolJarDir}/lib/tools.jar")
 
-    def dagger = "2.24"
+    def dagger = "2.25.2"
     implementation "com.google.dagger:dagger:$dagger"
     kapt "com.google.dagger:dagger-compiler:$dagger"
 
-    def assistedInject = "0.5.0"
+    def assistedInject = '0.5.2'
     compileOnly "com.squareup.inject:assisted-inject-annotations-dagger2:$assistedInject"
     kapt "com.squareup.inject:assisted-inject-processor-dagger2:$assistedInject"
 
@@ -58,10 +54,10 @@ dependencies {
     kapt "net.ltgt.gradle.incap:incap-processor:$incap"
 
     implementation "com.marcinmoskala:DiscreteMathToolkit:1.0.3"
-    implementation 'com.squareup:kotlinpoet:1.4.1'
-    implementation 'com.squareup:kotlinpoet-metadata:1.4.1'
-    implementation 'com.squareup:kotlinpoet-metadata-specs:1.4.1'
-    implementation 'com.squareup:kotlinpoet-classinspector-elements:1.4.1'
+    implementation 'com.squareup:kotlinpoet:1.4.4'
+    implementation 'com.squareup:kotlinpoet-metadata:1.4.4'
+    implementation 'com.squareup:kotlinpoet-metadata-specs:1.4.4'
+    implementation 'com.squareup:kotlinpoet-classinspector-elements:1.4.4'
     implementation "com.google.auto.service:auto-service:1.0-rc6"
     kapt "com.google.auto.service:auto-service:1.0-rc6"
 }
