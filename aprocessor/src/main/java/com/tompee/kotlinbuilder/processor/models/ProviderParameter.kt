@@ -1,20 +1,17 @@
 package com.tompee.kotlinbuilder.processor.models
 
-import com.squareup.inject.assisted.Assisted
-import com.squareup.inject.assisted.AssistedInject
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
-import com.squareup.kotlinpoet.metadata.specs.ClassInspector
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import com.tompee.kotlinbuilder.annotations.DefaultValueProvider
 import com.tompee.kotlinbuilder.annotations.Optional
 import com.tompee.kotlinbuilder.annotations.Setter
+import com.tompee.kotlinbuilder.processor.TypeElementProperties
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 import javax.lang.model.element.TypeElement
 import javax.lang.model.element.VariableElement
 import javax.lang.model.type.MirroredTypeException
 import javax.lang.model.type.TypeMirror
-import javax.lang.model.util.Types
 
 internal fun Optional.ValueProvider.getProvider(): TypeMirror {
     try {
@@ -51,35 +48,40 @@ internal data class ProviderParameter(
     val isStatic: Boolean = false
 ) : Parameter(name, propertySpec, setter) {
 
-    class Builder @AssistedInject constructor(
-        private val classInspector: ClassInspector,
-        private val types: Types,
-        @Assisted private val element: VariableElement,
-        @Assisted private val name: String,
-        @Assisted private val propertySpec: PropertySpec,
-        @Assisted private val setter: Setter?
+    class Builder(
+        private val properties: TypeElementProperties,
+        private val element: VariableElement,
+        private val name: String,
+        private val propertySpec: PropertySpec,
+        private val setter: Setter?
     ) {
 
-        @AssistedInject.Factory
-        interface Factory {
+        class Factory(private val properties: TypeElementProperties) {
 
             fun create(
                 element: VariableElement,
                 name: String,
                 propertySpec: PropertySpec,
                 setter: Setter?
-            ): Builder
+            ): Builder = Builder(properties, element, name, propertySpec, setter)
         }
 
         fun build(): Parameter {
             val provider =
                 element.getAnnotation(Optional.ValueProvider::class.java).getProvider()
-            val typeSpec = (types.asElement(provider) as TypeElement).toTypeSpec(classInspector)
+            val typeSpec =
+                (properties.types.asElement(provider) as TypeElement).toTypeSpec(properties.classInspector)
             val providerType = typeSpec.getInterfaceType().typeArguments.first()
             if (providerType != propertySpec.type) {
                 throw Throwable("Parameter $name type (${propertySpec.type}) is not the same as the ValueProvider type ($providerType)")
             }
-            return ProviderParameter(name, propertySpec, setter, provider.asTypeName(), typeSpec.kind == TypeSpec.Kind.OBJECT)
+            return ProviderParameter(
+                name,
+                propertySpec,
+                setter,
+                provider.asTypeName(),
+                typeSpec.kind == TypeSpec.Kind.OBJECT
+            )
         }
     }
 

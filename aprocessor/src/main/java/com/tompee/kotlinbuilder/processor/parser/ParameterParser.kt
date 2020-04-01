@@ -6,13 +6,12 @@ import com.tompee.kotlinbuilder.annotations.Optional
 import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.models.*
 import com.tompee.kotlinbuilder.processor.processor.ProviderMap
-import javax.inject.Inject
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
 
 @KotlinPoetMetadataPreview
-internal class ParameterParser @Inject constructor(private val providerFactory: ProviderParameter.Builder.Factory) {
+internal class ParameterParser(private val providerFactory: ProviderParameter.Builder.Factory) {
 
     fun parse(element: TypeElement, typeSpec: TypeSpec, providerMap: ProviderMap): List<Parameter> {
         val kotlinCtr = typeSpec.primaryConstructor

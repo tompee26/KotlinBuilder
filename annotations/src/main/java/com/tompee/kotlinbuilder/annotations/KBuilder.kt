@@ -6,6 +6,6 @@ package com.tompee.kotlinbuilder.annotations
  *
  * @property name optional builder name
  */
-@Retention(AnnotationRetention.SOURCE)
+@Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
 annotation class KBuilder(val name: String = "")

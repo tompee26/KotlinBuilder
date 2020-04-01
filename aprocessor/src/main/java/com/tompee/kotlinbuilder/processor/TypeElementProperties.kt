@@ -9,22 +9,21 @@ import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import com.squareup.kotlinpoet.metadata.toImmutableKmClass
 import com.tompee.kotlinbuilder.annotations.KBuilder
-import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.TypeMirror
+import javax.lang.model.util.Elements
+import javax.lang.model.util.Types
 
 /**
  * Contains the type element properties
- *
- * @property env processing environment
- * @property typeElement the input type element
  */
 @KotlinPoetMetadataPreview
 internal class TypeElementProperties(
-    private val env: ProcessingEnvironment,
-    private val typeElement: TypeElement
+    val typeElement: TypeElement,
+    val elements: Elements,
+    val types: Types
 ) {
-    private val classInspector = ElementsClassInspector.create(env.elementUtils, env.typeUtils)
+    val classInspector = ElementsClassInspector.create(elements, types)
 
     /**
      * Returns the [KBuilder] annotation instance tied to the type element
@@ -44,7 +43,7 @@ internal class TypeElementProperties(
      * Returns the package name of the type element
      */
     fun getPackageName(): String {
-        return env.elementUtils.getPackageOf(typeElement).toString()
+        return elements.getPackageOf(typeElement).toString()
     }
 
     /**

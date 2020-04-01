@@ -5,6 +5,6 @@ package com.tompee.kotlinbuilder.annotations
  *
  * @property name setter name
  */
-@Retention(AnnotationRetention.SOURCE)
+@Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class Setter(val name: String)
