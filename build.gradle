@@ -10,7 +10,6 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:3.6.4'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'com.novoda:bintray-release:0.9.1'
     }
 }
 
@@ -21,6 +20,7 @@ allprojects {
     }
 }
 
+project.ext.set("projectName", "Kotlin Builder")
 project.ext.set("groupProjectID", "com.tompee.kotlinbuilder")
 project.ext.set("publishVersion", "0.4.0")
 

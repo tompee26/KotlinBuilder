@@ -1,20 +1,10 @@
 apply plugin: 'java-library'
 apply plugin: 'kotlin'
 apply plugin: 'kotlin-kapt'
-apply plugin: 'com.novoda.bintray-release'
+apply plugin: 'maven-publish'
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
-
-publish {
-    userOrg = 'tompee26'
-    repoName = 'KotlinBuilder'
-    groupId = project.groupProjectID
-    artifactId = 'compiler'
-    publishVersion = project.publishVersion
-    desc = 'Annotation processor package for Kotlin Builder'
-    website = 'https://github.com/tompee26/KotlinBuilder'
-}
 
 sourceSets {
     generated {
@@ -27,6 +17,46 @@ sourceSets {
 Properties properties = new Properties()
 properties.load(project.rootProject.file('local.properties').newDataInputStream())
 def toolJarDir = properties.getProperty('tooljar.dir')
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = project.groupProjectID
+            artifactId = 'compiler'
+            version = project.publishVersion
+            from components.java
+
+            pom {
+                name = project.projectName
+                description = 'Annotation processor for Kotlin Builder'
+                url = 'https://github.com/tompee26/KotlinBuilder'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://github.com/tompee26/KotlinBuilder/blob/master/LICENSE'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'tompee26'
+                        name = 'tompee'
+                        email = 'tompee26@gmail.com'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "GithubPackages"
+            url = uri("https://maven.pkg.github.com/tompee26/KotlinBuilder")
+            credentials {
+                username = "tompee26"
+                password = properties.getProperty("token")
+            }
+        }
+    }
+}
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])

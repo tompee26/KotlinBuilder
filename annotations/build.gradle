@@ -1,19 +1,51 @@
 apply plugin: 'java-library'
 apply plugin: 'kotlin'
-apply plugin: 'com.novoda.bintray-release'
+apply plugin: 'maven-publish'
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
-publish {
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
 
-    userOrg = 'tompee26'
-    repoName = 'KotlinBuilder'
-    groupId = project.groupProjectID
-    artifactId = 'runtime'
-    publishVersion = project.publishVersion
-    desc = 'Annotation package for Kotlin Builder'
-    website = 'https://github.com/tompee26/KotlinBuilder'
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = project.groupProjectID
+            artifactId = 'runtime'
+            version = project.publishVersion
+            from components.java
+
+            pom {
+                name = project.projectName
+                description = 'Annotation package for Kotlin Builder'
+                url = 'https://github.com/tompee26/KotlinBuilder'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://github.com/tompee26/KotlinBuilder/blob/master/LICENSE'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'tompee26'
+                        name = 'tompee'
+                        email = 'tompee26@gmail.com'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "GithubPackages"
+            url = uri("https://maven.pkg.github.com/tompee26/KotlinBuilder")
+            credentials {
+                username = "tompee26"
+                password = properties.getProperty("token")
+            }
+        }
+    }
 }
 
 dependencies {
