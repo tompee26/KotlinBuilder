@@ -7,10 +7,29 @@ A builder pattern code generator for Kotlin leveraging DSL. Boilerplate code no 
 
 ## Getting started
 Note: `kapt` is needed to process annotations
-
-In your build.gradle, add the following dependencies:
-
 Note: starting 0.2.0, artifacts have been renamed (although previous versions with the new artifact is also reuploaded).
+
+### Versions 0.4.0 and above
+Starting 0.4.0, all artifacts will be uploaded to Github Packages. Note that old packages will not be reuploaded anymore.
+
+In your application build.gradle, add the repository link and authentication details. For more information, check here: https://docs.github.com/en/packages/guides/configuring-gradle-for-use-with-github-packages#authenticating-to-github-packages
+
+```
+allprojects {
+    repositories {
+        maven {
+            url 'https://maven.pkg.github.com/tompee26/KotlinBuilder'
+            credentials {
+                username = "your_github_username"
+                password = "your_personal_access_token"
+            }
+        }
+    }
+}
+
+```
+
+And in your module's build.gradle, add this
 
 ```
 dependencies {
@@ -18,6 +37,20 @@ dependencies {
    kapt "com.tompee.kotlinbuilder:compiler:$latest_version"
 }
 ```
+
+### Versions 0.3.0 and below
+All versions below and including 0.3.0 are hosted in jCenter. Since bintray and jCenter are being discontinued, you will no longer be able to do this.
+
+In your build.gradle, add the following dependencies:
+
+```
+dependencies {
+   implementation "com.tompee.kotlinbuilder:runtime:$latest_version"
+   kapt "com.tompee.kotlinbuilder:compiler:$latest_version"
+}
+```
+
+## How to use it
 
 Define a `class` or `data class` and annotate with `@KBuilder`. `@KBuilder` has an optional `name` parameter where you can specify a custom builder class name. If not set, it is by default the target class appended with `Builder` (e.g. `PersonBuilder`)
 ```kotlin
@@ -28,7 +61,6 @@ data class Person(val firstName : String, lastName: String, age: Int)
 Only the parameters defined in the primary constructor will be eligible for setter function generation.
 This will generate a builder class with the same package as the target class that allows you to use the builder pattern and Kotlin DSL.
 
-## How to use it
 The generator creates two methods of builder instantiation. The first type creates the actual target object by accepting a lambda that allows you to call the builder methods.
 
 ```kotlin
