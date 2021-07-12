@@ -1,16 +1,21 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.kotlin_version = '1.4.30'
+    ext.kotlin_version = '1.5.10'
     repositories {
         google()
         jcenter()
 
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.6.4'
+        classpath 'com.android.tools.build:gradle:4.2.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
+}
+
+plugins {
+    id 'io.github.gradle-nexus.publish-plugin' version "1.1.0"
+    id 'org.jetbrains.dokka' version "1.5.0"
 }
 
 allprojects {
@@ -20,10 +25,21 @@ allprojects {
     }
 }
 
-project.ext.set("projectName", "Kotlin Builder")
-project.ext.set("groupProjectID", "com.tompee.kotlinbuilder")
-project.ext.set("publishVersion", "0.4.0")
+project.ext.set("groupId", "io.github.tompee26")
+project.ext.set("versionCode", "0.4.0")
+project.ext.set("publishUrl", "https://github.com/tompee26/KotlinBuilder")
+project.ext.set("license", "MIT License")
+project.ext.set("licenseUrl", "https://github.com/tompee26/KotlinBuilder/blob/master/LICENSE")
+project.ext.set("developerId", "tompee26")
+project.ext.set("developerName", "Tompee Balauag")
+project.ext.set("developerEmail", "tompee26@gmail.com")
+project.ext.set("scmConnection", "scm:git:github.com/tompee26/KotlinBuilder.git")
+project.ext.set("scmDevConnection", "scm:git:ssh://github.com/tompee26/KotlinBuilder.git")
+project.ext.set("scmUrl", "https://github.com/tompee26/KotlinBuilder/tree/master")
 
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+apply plugin: 'io.github.gradle-nexus.publish-plugin'
+apply from: "${rootDir}/scripts/publish-root.gradle"

@@ -2,6 +2,7 @@ apply plugin: 'java-library'
 apply plugin: 'kotlin'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'maven-publish'
+apply plugin: 'org.jetbrains.dokka'
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
@@ -14,49 +15,43 @@ sourceSets {
     }
 }
 
-Properties properties = new Properties()
-properties.load(project.rootProject.file('local.properties').newDataInputStream())
-def toolJarDir = properties.getProperty('tooljar.dir')
+ext {
+    PUBLISH_GROUP_ID = groupId
+    PUBLISH_VERSION = versionCode
+    PUBLISH_ARTIFACT_ID = 'kotlin-builder-compiler'
+    PUBLISH_DESCRIPTION = 'Annotation processor for Kotlin Builder'
+    PUBLISH_URL = publishUrl
+    PUBLISH_LICENSE_NAME = license
+    PUBLISH_LICENSE_URL = licenseUrl
+    PUBLISH_DEVELOPER_ID = developerId
+    PUBLISH_DEVELOPER_NAME = developerName
+    PUBLISH_DEVELOPER_EMAIL = developerEmail
+    PUBLISH_SCM_CONNECTION = scmConnection
+    PUBLISH_SCM_DEVELOPER_CONNECTION = scmDevConnection
+    PUBLISH_SCM_URL = scmUrl
+}
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            groupId = project.groupProjectID
-            artifactId = 'compiler'
-            version = project.publishVersion
-            from components.java
-
-            pom {
-                name = project.projectName
-                description = 'Annotation processor for Kotlin Builder'
-                url = 'https://github.com/tompee26/KotlinBuilder'
-                licenses {
-                    license {
-                        name = 'MIT License'
-                        url = 'https://github.com/tompee26/KotlinBuilder/blob/master/LICENSE'
-                    }
-                }
-                developers {
-                    developer {
-                        id = 'tompee26'
-                        name = 'tompee'
-                        email = 'tompee26@gmail.com'
-                    }
-                }
-            }
+dokkaJavadoc {
+    dokkaSourceSets {
+        configureEach {
+            jdkVersion.set(8)
+            noAndroidSdkLink.set(false)
         }
-    }
-    repositories {
-        maven {
-            name = "GithubPackages"
-            url = uri("https://maven.pkg.github.com/tompee26/KotlinBuilder")
-            credentials {
-                username = "tompee26"
-                password = properties.getProperty("token")
+        named("main") {
+            externalDocumentationLink {
+                url = URL("https://developer.android.com/reference/")
+                packageListUrl = URL("https://developer.android.com/reference/android/support/package-list")
             }
         }
     }
 }
+
+apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"
+
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+def toolJarDir = properties.getProperty('tooljar.dir')
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -71,7 +66,7 @@ dependencies {
 
     implementation "com.marcinmoskala:DiscreteMathToolkit:1.0.3"
 
-    def kotlin_poet = "1.5.0"
+    def kotlin_poet = "1.8.0"
     implementation "com.squareup:kotlinpoet:$kotlin_poet"
     implementation "com.squareup:kotlinpoet-metadata:$kotlin_poet"
     implementation "com.squareup:kotlinpoet-metadata-specs:$kotlin_poet"
