@@ -9,8 +9,21 @@ A builder pattern code generator for Kotlin leveraging DSL. Boilerplate code no 
 Note: `kapt` is needed to process annotations
 Note: starting 0.2.0, artifacts have been renamed (although previous versions with the new artifact is also reuploaded).
 
-### Versions 0.4.0 and above
-Starting 0.4.0, all artifacts will be uploaded to Github Packages. Note that old packages will not be reuploaded anymore.
+### Versions 0.5.0 and above
+Starting 0.5.0, all artifacts will be uploaded to Maven Central. Note that old packages will not be reuploaded anymore.
+
+In your build.gradle, add the following dependencies:
+
+```
+dependencies {
+    implementation "io.github.tompee26:kotlin-builder-runtime:$latest_version"
+    kapt "io.github.tompee26:kotlin-builder-compiler:$latest_version"
+}
+```
+
+### Version 0.4.0
+
+Version 0.4.0 is available in Github packages.
 
 In your application build.gradle, add the repository link and authentication details. For more information, check here: https://docs.github.com/en/packages/guides/configuring-gradle-for-use-with-github-packages#authenticating-to-github-packages
 
@@ -33,8 +46,8 @@ And in your module's build.gradle, add this
 
 ```
 dependencies {
-   implementation "com.tompee.kotlinbuilder:runtime:$latest_version"
-   kapt "com.tompee.kotlinbuilder:compiler:$latest_version"
+    implementation "com.tompee.kotlinbuilder:runtime:$latest_version"
+    kapt "com.tompee.kotlinbuilder:compiler:$latest_version"
 }
 ```
 
