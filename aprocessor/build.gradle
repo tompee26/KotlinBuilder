@@ -64,8 +64,6 @@ dependencies {
     compileOnly "net.ltgt.gradle.incap:incap:$incap"
     kapt "net.ltgt.gradle.incap:incap-processor:$incap"
 
-    implementation "com.marcinmoskala:DiscreteMathToolkit:1.0.3"
-
     def kotlin_poet = "1.8.0"
     implementation "com.squareup:kotlinpoet:$kotlin_poet"
     implementation "com.squareup:kotlinpoet-metadata:$kotlin_poet"

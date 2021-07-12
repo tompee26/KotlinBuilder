@@ -2,7 +2,6 @@ package com.tompee.kotlinbuilder.processor
 
 import com.google.auto.common.BasicAnnotationProcessor
 import com.google.common.collect.SetMultimap
-import com.marcinmoskala.math.powerset
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.tompee.kotlinbuilder.annotations.KBuilder
@@ -213,5 +212,10 @@ internal class GeneratorStep(
             builder.endControlFlow()
         }
         return builder.build()
+    }
+
+    private fun <T> Collection<T>.powerset(): Set<Set<T>> = when {
+        isEmpty() -> setOf(setOf())
+        else -> drop(1).powerset().let { it + it.map { it + first() } }
     }
 }
