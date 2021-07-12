@@ -24,7 +24,7 @@ allprojects {
 }
 
 project.ext.set("groupId", "io.github.tompee26")
-project.ext.set("versionCode", "0.4.0")
+project.ext.set("versionCode", "0.5.0")
 project.ext.set("publishUrl", "https://github.com/tompee26/KotlinBuilder")
 project.ext.set("license", "MIT License")
 project.ext.set("licenseUrl", "https://github.com/tompee26/KotlinBuilder/blob/master/LICENSE")
