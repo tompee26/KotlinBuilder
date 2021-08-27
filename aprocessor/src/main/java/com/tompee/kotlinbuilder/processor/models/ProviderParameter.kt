@@ -6,7 +6,7 @@ import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import com.tompee.kotlinbuilder.annotations.DefaultValueProvider
 import com.tompee.kotlinbuilder.annotations.Optional
 import com.tompee.kotlinbuilder.annotations.Setter
-import com.tompee.kotlinbuilder.processor.TypeElementProperties
+import com.tompee.kotlinbuilder.processor.KBuilderElement
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 import javax.lang.model.element.TypeElement
 import javax.lang.model.element.VariableElement
@@ -49,14 +49,14 @@ internal data class ProviderParameter(
 ) : Parameter(name, propertySpec, setter) {
 
     class Builder(
-        private val properties: TypeElementProperties,
+        private val properties: KBuilderElement,
         private val element: VariableElement,
         private val name: String,
         private val propertySpec: PropertySpec,
         private val setter: Setter?
     ) {
 
-        class Factory(private val properties: TypeElementProperties) {
+        class Factory(private val properties: KBuilderElement) {
 
             fun create(
                 element: VariableElement,

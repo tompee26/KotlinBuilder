@@ -1,5 +1,7 @@
 package com.tompee.kotlinbuilder.processor
 
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.classinspector.elements.ElementsClassInspector
@@ -17,21 +19,20 @@ import javax.lang.model.util.Types
  * Contains the type element properties
  */
 @KotlinPoetMetadataPreview
-internal class TypeElementProperties(
+internal class KBuilderElement(
     val typeElement: TypeElement,
     elements: Elements,
     val types: Types
 ) {
-
-    /**
-     * Returns the class inspector
-     */
-    val classInspector = ElementsClassInspector.create(elements, types)
-
     /**
      * Returns the builder annotation information
      */
-    val builderAnnotation: KBuilder = typeElement.getAnnotation(KBuilder::class.java)
+    private val builderAnnotation: KBuilder = typeElement.getAnnotation(KBuilder::class.java)
+
+    /**
+     * Returns the package name of the type element
+     */
+    val packageName: String = elements.getPackageOf(typeElement).toString()
 
     /**
      * Returns the type element's simple name
@@ -39,9 +40,17 @@ internal class TypeElementProperties(
     val name: String = typeElement.simpleName.toString()
 
     /**
-     * Returns the package name of the type element
+     * Generates a builder class name
      */
-    val packageName: String = elements.getPackageOf(typeElement).toString()
+    val builderClassName: ClassName = builderAnnotation.name.let {
+        val builderName = if (it.isEmpty()) "${name}Builder" else it
+        ClassName(packageName, builderName)
+    }
+
+    /**
+     * Returns the class inspector
+     */
+    val classInspector = ElementsClassInspector.create(elements, types)
 
     /**
      * Returns the [TypeName]
@@ -54,4 +63,14 @@ internal class TypeElementProperties(
      * Returns the [TypeSpec]
      */
     val typeSpec: TypeSpec = typeElement.toTypeSpec(classInspector)
+
+    /**
+     * Returns true if this element is declared as private
+     */
+    val isPrivate: Boolean = typeSpec.modifiers.any { it == KModifier.PRIVATE }
+
+    /**
+     * Returns true if this element is declared as internal
+     */
+    val isInternal: Boolean = typeSpec.modifiers.any { it == KModifier.INTERNAL }
 }
