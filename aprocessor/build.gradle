@@ -48,7 +48,6 @@ dokkaJavadoc {
 
 apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"
 
-
 Properties properties = new Properties()
 properties.load(project.rootProject.file('local.properties').newDataInputStream())
 def toolJarDir = properties.getProperty('tooljar.dir')
