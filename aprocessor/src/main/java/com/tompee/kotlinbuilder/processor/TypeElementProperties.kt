@@ -2,15 +2,14 @@ package com.tompee.kotlinbuilder.processor
 
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.asTypeName
 import com.squareup.kotlinpoet.classinspector.elements.ElementsClassInspector
-import com.squareup.kotlinpoet.metadata.ImmutableKmClass
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
+import com.squareup.kotlinpoet.metadata.specs.internal.ClassInspectorUtil
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import com.squareup.kotlinpoet.metadata.toImmutableKmClass
 import com.tompee.kotlinbuilder.annotations.KBuilder
+import com.tompee.kotlinbuilder.processor.extensions.metadata
 import javax.lang.model.element.TypeElement
-import javax.lang.model.type.TypeMirror
 import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
 
@@ -20,57 +19,39 @@ import javax.lang.model.util.Types
 @KotlinPoetMetadataPreview
 internal class TypeElementProperties(
     val typeElement: TypeElement,
-    val elements: Elements,
+    elements: Elements,
     val types: Types
 ) {
+
+    /**
+     * Returns the class inspector
+     */
     val classInspector = ElementsClassInspector.create(elements, types)
 
     /**
-     * Returns the [KBuilder] annotation instance tied to the type element
+     * Returns the builder annotation information
      */
-    fun getBuilderAnnotation(): KBuilder {
-        return typeElement.getAnnotation(KBuilder::class.java)
-    }
+    val builderAnnotation: KBuilder = typeElement.getAnnotation(KBuilder::class.java)
 
     /**
-     * Returns the type element simple name
+     * Returns the type element's simple name
      */
-    fun getName(): String {
-        return typeElement.simpleName.toString()
-    }
+    val name: String = typeElement.simpleName.toString()
 
     /**
      * Returns the package name of the type element
      */
-    fun getPackageName(): String {
-        return elements.getPackageOf(typeElement).toString()
-    }
+    val packageName: String = elements.getPackageOf(typeElement).toString()
 
     /**
      * Returns the [TypeName]
      */
-    fun getTypeName(): TypeName {
-        return typeElement.asType().asTypeName()
-    }
-
-    /**
-     * Returns the [TypeMirror]
-     */
-    fun getTypeMirror(): TypeMirror {
-        return typeElement.asType()
+    val className: TypeName = typeElement.metadata.toImmutableKmClass().let {
+        ClassInspectorUtil.createClassName(it.name)
     }
 
     /**
      * Returns the [TypeSpec]
      */
-    fun getTypeSpec(): TypeSpec {
-        return typeElement.toTypeSpec(classInspector)
-    }
-
-    /**
-     * Returns the [ImmutableKmClass]
-     */
-    fun getKmClass(): ImmutableKmClass {
-        return typeElement.toImmutableKmClass()
-    }
+    val typeSpec: TypeSpec = typeElement.toTypeSpec(classInspector)
 }

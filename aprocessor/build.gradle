@@ -68,6 +68,7 @@ dependencies {
     implementation "com.squareup:kotlinpoet-metadata:$kotlin_poet"
     implementation "com.squareup:kotlinpoet-metadata-specs:$kotlin_poet"
     implementation "com.squareup:kotlinpoet-classinspector-elements:$kotlin_poet"
+    implementation "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.3.0"
     implementation "com.google.auto.service:auto-service:1.0-rc6"
     kapt "com.google.auto.service:auto-service:1.0-rc6"
 }

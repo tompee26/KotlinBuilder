@@ -49,15 +49,12 @@ internal class GeneratorStep(
         )
     }
 
-    private fun generate(
-        element: TypeElement,
-        providers: List<Element>
-    ) {
+    private fun generate(element: TypeElement, providers: List<Element>) {
         try {
             val properties = TypeElementProperties(element, elements, types)
             val builderName = getBuilderClassName(properties)
 
-            val fileSpec = FileSpec.builder(properties.getPackageName(), builderName.toString())
+            val fileSpec = FileSpec.builder(properties.packageName, builderName.toString())
                 .addType(buildClassSpec(properties, builderName, providers))
                 .build()
             fileSpec.writeTo(filer)
@@ -70,9 +67,9 @@ internal class GeneratorStep(
      * Generates the builder class name from the annotation if available
      */
     private fun getBuilderClassName(properties: TypeElementProperties): ClassName {
-        val name = properties.getBuilderAnnotation().name
-        val builderName = if (name.isEmpty()) "${properties.getName()}Builder" else name
-        return ClassName(properties.getPackageName(), builderName)
+        val name = properties.builderAnnotation.name
+        val builderName = if (name.isEmpty()) "${properties.name}Builder" else name
+        return ClassName(properties.packageName, builderName)
     }
 
     /**
@@ -84,17 +81,17 @@ internal class GeneratorStep(
         builderName: ClassName,
         providers: List<Element>
     ): TypeSpec {
-        check(!properties.getTypeSpec().modifiers.any { it == KModifier.PRIVATE }) { "${properties.getName()} is a private class" }
+        check(!properties.typeSpec.modifiers.any { it == KModifier.PRIVATE }) { "${properties.name} is a private class" }
 
         val parameterParser = ParameterParser(ProviderParameter.Builder.Factory(properties))
         val parameterList =
             parameterParser.parse(
                 properties.typeElement,
-                properties.getTypeSpec(),
+                properties.typeSpec,
                 ProviderProcessor(properties.classInspector).getProviderMap(providers)
             )
 
-        val shouldBeInternal = properties.getTypeSpec().modifiers.any { it == KModifier.INTERNAL }
+        val shouldBeInternal = properties.typeSpec.modifiers.any { it == KModifier.INTERNAL }
         val classSpecBuilder = TypeSpec.classBuilder(builderName)
             .primaryConstructor(buildConstructor(parameterList))
             .addType(createCompanionObject(parameterList, builderName, properties))
@@ -126,7 +123,7 @@ internal class GeneratorStep(
         //region First invoke overload
         val createOverload = FunSpec.builder("invoke")
             .addModifiers(KModifier.INTERNAL, KModifier.OPERATOR, KModifier.INLINE)
-            .returns(properties.getTypeName())
+            .returns(properties.className)
             .addParameters(parameterList.filterNot { it.isOptional() }
                 .map { it.toInvokeParamSpec() })
             .addParameter(
@@ -174,7 +171,7 @@ internal class GeneratorStep(
         parameterList: List<Parameter>, properties: TypeElementProperties
     ): FunSpec {
         val builder = FunSpec.builder("build")
-            .returns(properties.getTypeName())
+            .returns(properties.className)
 
         /**
          * Add initializers
@@ -185,9 +182,11 @@ internal class GeneratorStep(
         val defaultParameters = parameterList.filterIsInstance<DefaultParameter>()
         if (defaultParameters.isEmpty()) {
             builder.addStatement(
-                "return ${properties.getTypeName()}(${parameterList.joinToString(
-                    separator = ", "
-                ) { it.name }})".wrapProof()
+                "return ${properties.className}(${
+                    parameterList.joinToString(
+                        separator = ", "
+                    ) { it.name }
+                })".wrapProof()
             )
         } else {
             val nonDefaultParameters = parameterList.filterNot { it is DefaultParameter }
@@ -203,11 +202,11 @@ internal class GeneratorStep(
                     ) { "${it.name} = ${it.name}" }
                     val defaultInitializer =
                         params.joinToString(separator = ", ") { "${it.name} = ${it.name}!!" }
-                    return@map "$condition -> ${properties.getTypeName()}($nonDefaultInitializer$defaultInitializer)"
+                    return@map "$condition -> ${properties.className}($nonDefaultInitializer$defaultInitializer)"
                 }
                 .forEach { builder.addStatement(it.wrapProof()) }
             builder.addStatement(
-                "else -> ${properties.getTypeName()}(${nonDefaultParameters.joinToString(separator = ", ") { "${it.name} = ${it.name}" }})".wrapProof()
+                "else -> ${properties.className}(${nonDefaultParameters.joinToString(separator = ", ") { "${it.name} = ${it.name}" }})".wrapProof()
             )
             builder.endControlFlow()
         }
