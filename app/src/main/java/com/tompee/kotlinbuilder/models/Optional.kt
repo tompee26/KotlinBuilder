@@ -46,7 +46,7 @@ data class Optional (
     val list : List<View>,
 
     @Optional
-    val mutableList : MutableList<View>,
+    val mutableList : MutableList<View?>,
 
     @Optional
     val map : Map<Fragment, Int>,

@@ -31,14 +31,14 @@ internal data class EnumParameter(
      * Builds a constructor parameter spec
      */
     override fun toCtrParamSpec(): ParameterSpec {
-        return ParameterSpec.builder(name, info.spec.type, KModifier.PRIVATE).build()
+        return ParameterSpec.builder(name, info.typeName, KModifier.PRIVATE).build()
     }
 
     /**
      * Builds a constructor parameter spec
      */
     override fun toPropertySpec(): PropertySpec {
-        return PropertySpec.builder(name, info.spec.type)
+        return PropertySpec.builder(name, info.typeName)
             .initializer(name)
             .mutable()
             .build()
@@ -56,8 +56,8 @@ internal data class EnumParameter(
      */
     override fun createInitializeStatement(): String {
         val initializer =
-            if (position == EnumPosition.FIRST) "val $name = ${info.spec.type}.values()[0]"
-            else "val $name = ${info.spec.type}.values()[${info.spec.type}.values().count() - 1]"
+            if (position == EnumPosition.FIRST) "val $name = ${info.typeName}.values()[0]"
+            else "val $name = ${info.typeName}.values()[${info.typeName}.values().count() - 1]"
         return initializer.wrapProof()
     }
 }

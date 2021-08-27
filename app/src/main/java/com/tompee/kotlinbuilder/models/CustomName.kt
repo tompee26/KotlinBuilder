@@ -5,11 +5,11 @@ import com.tompee.kotlinbuilder.annotations.Optional
 import com.tompee.kotlinbuilder.annotations.Setter
 
 @KBuilder("CustomFactory")
-data class CustomName(
+class CustomName(
     @Setter("setName")
     val name : String,
 
     @Setter("setAge")
     @Optional
-    val age: Int
+    age: Int
 )

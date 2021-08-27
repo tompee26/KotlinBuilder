@@ -1,14 +1,9 @@
 package com.tompee.kotlinbuilder.processor
 
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.TypeName
-import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.classinspector.elements.ElementsClassInspector
-import com.squareup.kotlinpoet.metadata.ImmutableKmClass
-import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
-import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
-import com.squareup.kotlinpoet.metadata.toImmutableKmClass
+import com.squareup.kotlinpoet.metadata.*
 import com.tompee.kotlinbuilder.annotations.KBuilder
 import com.tompee.kotlinbuilder.processor.extensions.className
 import com.tompee.kotlinbuilder.processor.extensions.metadata
@@ -64,17 +59,12 @@ internal class KBuilderElement(
     val className: TypeName = typeElement.className
 
     /**
-     * Returns the [TypeSpec]
-     */
-    val typeSpec: TypeSpec = typeElement.toTypeSpec(classInspector)
-
-    /**
      * Returns true if this element is declared as private
      */
-    val isPrivate: Boolean = typeSpec.modifiers.any { it == KModifier.PRIVATE }
+    val isPrivate: Boolean = metadata.isPrivate
 
     /**
      * Returns true if this element is declared as internal
      */
-    val isInternal: Boolean = typeSpec.modifiers.any { it == KModifier.INTERNAL }
+    val isInternal: Boolean = metadata.isInternal
 }

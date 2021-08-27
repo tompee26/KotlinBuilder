@@ -18,9 +18,8 @@ internal class ParameterParser(private val providerFactory: ProviderParameter.Bu
             .valueParameters
         return parameters.mapIndexed { index, valueParameter ->
             val element = kElement.typeElement.findVariableElement(index, parameters.size)
-            val spec = kElement.typeSpec.propertySpecs.first { it.name == valueParameter.name }
             val parameterInfo =
-                ParameterInfo(valueParameter, element, spec, element, kElement.types)
+                ParameterInfo(valueParameter, element, kElement.types)
             when {
                 element.findAnnotation<Optional>() != null -> {
                     OptionalParameter.create(parameterInfo, providerMap)

@@ -57,7 +57,7 @@ internal data class OptionalParameter(
             }
 
             // Check from value type mapping
-            val typeName = info.spec.type.let {
+            val typeName = info.typeName.let {
                 if (it is ParameterizedTypeName) it.rawType else it
             }
             val initializer = optionalValueTypeMap[typeName]
@@ -66,7 +66,7 @@ internal data class OptionalParameter(
             }
 
             // Check from provider map
-            val providerInfo = providerMap[info.spec.type]
+            val providerInfo = providerMap[info.typeName]
                 ?: throw Throwable("Default value for parameter ${info.name} cannot be inferred")
             return ProviderParameter(
                 info,
@@ -80,14 +80,14 @@ internal data class OptionalParameter(
      * Builds a constructor parameter spec
      */
     override fun toCtrParamSpec(): ParameterSpec {
-        return ParameterSpec.builder(name, info.spec.type, KModifier.PRIVATE).build()
+        return ParameterSpec.builder(name, info.typeName, KModifier.PRIVATE).build()
     }
 
     /**
      * Builds a constructor parameter spec
      */
     override fun toPropertySpec(): PropertySpec {
-        return PropertySpec.builder(name, info.spec.type)
+        return PropertySpec.builder(name, info.typeName)
             .initializer(name)
             .mutable()
             .build()
@@ -104,6 +104,6 @@ internal data class OptionalParameter(
      * Builds an invoke method initializer statement
      */
     override fun createInitializeStatement(): String {
-        return "val $name : ${info.spec.type} = ${initializer.get()}".wrapProof()
+        return "val $name : ${info.typeName} = ${initializer.get()}".wrapProof()
     }
 }

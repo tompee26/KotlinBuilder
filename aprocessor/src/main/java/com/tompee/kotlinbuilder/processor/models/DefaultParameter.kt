@@ -21,7 +21,7 @@ internal data class DefaultParameter(override val info: ParameterInfo) : Paramet
      * Builds a constructor parameter spec
      */
     override fun toCtrParamSpec(): ParameterSpec {
-        return ParameterSpec.builder(name, info.spec.type.copy(true), KModifier.PRIVATE).build()
+        return ParameterSpec.builder(name, info.typeName.copy(true), KModifier.PRIVATE).build()
     }
 
 
@@ -29,7 +29,7 @@ internal data class DefaultParameter(override val info: ParameterInfo) : Paramet
      * Builds a constructor parameter spec
      */
     override fun toPropertySpec(): PropertySpec {
-        return PropertySpec.builder(name, info.spec.type.copy(true))
+        return PropertySpec.builder(name, info.typeName.copy(true))
             .initializer(name)
             .mutable()
             .build()
@@ -46,6 +46,6 @@ internal data class DefaultParameter(override val info: ParameterInfo) : Paramet
      * Builds an invoke method initializer statement
      */
     override fun createInitializeStatement(): String {
-        return "val $name : ${info.spec.type.copy(true)} = null".wrapProof()
+        return "val $name : ${info.typeName.copy(true)} = null".wrapProof()
     }
 }

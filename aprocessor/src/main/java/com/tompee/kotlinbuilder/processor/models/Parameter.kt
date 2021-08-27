@@ -49,7 +49,7 @@ internal abstract class Parameter {
     fun toBuilderFunSpec(className: ClassName): FunSpec {
         val name = info.setter?.name ?: info.name
         val providerParamType =
-            LambdaTypeName.get(returnType = info.spec.type)
+            LambdaTypeName.get(returnType = info.typeName)
         return FunSpec.builder(name)
             .addParameter(ParameterSpec.builder("provider", providerParamType).build())
             .returns(className)

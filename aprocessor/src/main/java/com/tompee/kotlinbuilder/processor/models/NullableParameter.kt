@@ -17,7 +17,7 @@ internal data class NullableParameter(override val info: ParameterInfo) : Parame
          */
         fun create(info: ParameterInfo): NullableParameter {
             if (!info.isNullable) {
-                throw Throwable("Parameter ${info.name} is annotated with @Optional.Nullable but its type is not nullable. Actual type is ${info.spec.type}")
+                throw Throwable("Parameter ${info.name} is annotated with @Optional.Nullable but its type is not nullable. Actual type is ${info.typeName}")
             }
             return NullableParameter(info)
         }
@@ -27,14 +27,14 @@ internal data class NullableParameter(override val info: ParameterInfo) : Parame
      * Builds a constructor parameter spec
      */
     override fun toCtrParamSpec(): ParameterSpec {
-        return ParameterSpec.builder(info.name, info.spec.type, KModifier.PRIVATE).build()
+        return ParameterSpec.builder(info.name, info.typeName, KModifier.PRIVATE).build()
     }
 
     /**
      * Builds a constructor parameter spec
      */
     override fun toPropertySpec(): PropertySpec {
-        return PropertySpec.builder(info.name, info.spec.type)
+        return PropertySpec.builder(info.name, info.typeName)
             .initializer(info.name)
             .mutable()
             .build()
@@ -51,6 +51,6 @@ internal data class NullableParameter(override val info: ParameterInfo) : Parame
      * Builds an invoke method initializer statement
      */
     override fun createInitializeStatement(): String {
-        return "val ${info.name} : ${info.spec.type} = null".wrapProof()
+        return "val ${info.name} : ${info.typeName} = null".wrapProof()
     }
 }

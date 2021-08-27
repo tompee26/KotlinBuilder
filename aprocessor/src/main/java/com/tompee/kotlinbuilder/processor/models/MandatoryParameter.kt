@@ -21,14 +21,14 @@ internal data class MandatoryParameter(
      * Builds a constructor parameter spec
      */
     override fun toCtrParamSpec(): ParameterSpec {
-        return ParameterSpec.builder(name, info.spec.type, KModifier.PRIVATE).build()
+        return ParameterSpec.builder(name, info.typeName, KModifier.PRIVATE).build()
     }
 
     /**
      * Builds a constructor parameter spec
      */
     override fun toPropertySpec(): PropertySpec {
-        return PropertySpec.builder(name, info.spec.type)
+        return PropertySpec.builder(name, info.typeName)
             .initializer(name)
             .mutable()
             .build()
@@ -38,7 +38,7 @@ internal data class MandatoryParameter(
      * Builds an invoke method parameter spec
      */
     override fun toInvokeParamSpec(): ParameterSpec {
-        return ParameterSpec.builder(name, info.spec.type).build()
+        return ParameterSpec.builder(name, info.typeName).build()
     }
 
     /**
