@@ -9,7 +9,7 @@ import javax.lang.model.util.Types
 
 @OptIn(KotlinPoetMetadataPreview::class)
 internal class ParameterInfo(
-    private val value: ImmutableKmValueParameter,
+    value: ImmutableKmValueParameter,
     val varElement: VariableElement,
     val spec: PropertySpec,
     private val variableElement: VariableElement,

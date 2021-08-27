@@ -2,6 +2,7 @@ package com.tompee.kotlinbuilder.processor.models
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
+import com.tompee.kotlinbuilder.processor.extensions.className
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 import com.tompee.kotlinbuilder.processor.processor.ProviderMap
 
@@ -69,7 +70,7 @@ internal data class OptionalParameter(
                 ?: throw Throwable("Default value for parameter ${info.name} cannot be inferred")
             return ProviderParameter(
                 info,
-                providerInfo.element.asType().asTypeName(),
+                providerInfo.element.className,
                 providerInfo.typeSpec.kind == TypeSpec.Kind.OBJECT
             )
         }

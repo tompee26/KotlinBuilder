@@ -7,10 +7,10 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.classinspector.elements.ElementsClassInspector
 import com.squareup.kotlinpoet.metadata.ImmutableKmClass
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
-import com.squareup.kotlinpoet.metadata.specs.internal.ClassInspectorUtil
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import com.squareup.kotlinpoet.metadata.toImmutableKmClass
 import com.tompee.kotlinbuilder.annotations.KBuilder
+import com.tompee.kotlinbuilder.processor.extensions.className
 import com.tompee.kotlinbuilder.processor.extensions.metadata
 import javax.lang.model.element.TypeElement
 import javax.lang.model.util.Elements
@@ -61,7 +61,7 @@ internal class KBuilderElement(
     /**
      * Returns the [TypeName]
      */
-    val className: TypeName = metadata.let { ClassInspectorUtil.createClassName(it.name) }
+    val className: TypeName = typeElement.className
 
     /**
      * Returns the [TypeSpec]

@@ -6,6 +6,7 @@ import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import com.tompee.kotlinbuilder.annotations.DefaultValueProvider
 import com.tompee.kotlinbuilder.annotations.Optional
 import com.tompee.kotlinbuilder.processor.KBuilderElement
+import com.tompee.kotlinbuilder.processor.extensions.className
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.MirroredTypeException
@@ -59,7 +60,7 @@ internal data class ProviderParameter(
             }
             return ProviderParameter(
                 info,
-                provider.asTypeName(),
+                kElement.types.asElement(provider).className,
                 typeSpec.kind == TypeSpec.Kind.OBJECT
             )
         }
@@ -99,7 +100,7 @@ internal data class ProviderParameter(
     /**
      * Creates a variable that will shadow the global that will contain the non-null initializer
      */
-    override fun toBuildInitializer(): String? {
+    override fun toBuildInitializer(): String {
         return if (isStatic) "val $name = this.$name ?: $typeName.get()".wrapProof()
         else "val $name = this.$name ?: $typeName().get()".wrapProof()
     }
