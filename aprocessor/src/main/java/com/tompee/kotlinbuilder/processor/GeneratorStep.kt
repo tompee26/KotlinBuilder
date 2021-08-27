@@ -12,6 +12,7 @@ import com.tompee.kotlinbuilder.processor.models.Parameter
 import com.tompee.kotlinbuilder.processor.models.ProviderParameter
 import com.tompee.kotlinbuilder.processor.parser.ParameterParser
 import com.tompee.kotlinbuilder.processor.processor.ProviderProcessor
+import javax.annotation.Generated
 import javax.annotation.processing.Filer
 import javax.annotation.processing.Messager
 import javax.lang.model.element.Element
@@ -77,6 +78,7 @@ internal class GeneratorStep(
         val parameterList = parameterParser.parse(kElement, providerMap)
 
         val classSpecBuilder = TypeSpec.classBuilder(builderName)
+            .addAnnotation(generatedAnnotation())
             .primaryConstructor(buildConstructor(parameterList))
             .addType(createCompanionObject(parameterList, kElement))
             .addProperties(parameterList.map { it.toPropertySpec() })
@@ -84,6 +86,16 @@ internal class GeneratorStep(
             .addFunction(createBuildMethod(parameterList, kElement))
         if (kElement.isInternal) classSpecBuilder.addModifiers(KModifier.INTERNAL)
         return classSpecBuilder.build()
+    }
+
+    /**
+     * Adds a Generated annotation to the class
+     */
+    private fun generatedAnnotation() : AnnotationSpec {
+        return AnnotationSpec.builder(Generated::class.asClassName())
+            .addMember("%S", BuilderProcessor::class.java.canonicalName)
+            .addMember("comments = %S", "https://github.com/tompee26/KotlinBuilder")
+            .build()
     }
 
     /**
