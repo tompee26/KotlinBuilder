@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.classinspector.elements.ElementsClassInspector
+import com.squareup.kotlinpoet.metadata.ImmutableKmClass
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.specs.internal.ClassInspectorUtil
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
@@ -18,7 +19,7 @@ import javax.lang.model.util.Types
 /**
  * Contains the type element properties
  */
-@KotlinPoetMetadataPreview
+@OptIn(KotlinPoetMetadataPreview::class)
 internal class KBuilderElement(
     val typeElement: TypeElement,
     elements: Elements,
@@ -53,11 +54,14 @@ internal class KBuilderElement(
     val classInspector = ElementsClassInspector.create(elements, types)
 
     /**
+     * Returns the kotlin metadata
+     */
+    val metadata: ImmutableKmClass = typeElement.metadata.toImmutableKmClass()
+
+    /**
      * Returns the [TypeName]
      */
-    val className: TypeName = typeElement.metadata.toImmutableKmClass().let {
-        ClassInspectorUtil.createClassName(it.name)
-    }
+    val className: TypeName = metadata.let { ClassInspectorUtil.createClassName(it.name) }
 
     /**
      * Returns the [TypeSpec]

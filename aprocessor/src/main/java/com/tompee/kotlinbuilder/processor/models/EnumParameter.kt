@@ -1,51 +1,29 @@
 package com.tompee.kotlinbuilder.processor.models
 
-import com.squareup.kotlinpoet.*
-import com.sun.tools.javac.code.Type
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.PropertySpec
 import com.tompee.kotlinbuilder.annotations.EnumPosition
 import com.tompee.kotlinbuilder.annotations.Optional
-import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
-import javax.lang.model.element.VariableElement
 
 /**
  * Represents an optional enum parameter
- *
- * @property name actual parameter name
- * @property propertySpec property spec
- * @property setter optional setter name annotation
- * @property position position of the default value
  */
 internal data class EnumParameter(
-    override val name: String,
-    override val propertySpec: PropertySpec,
-    override val setter: Setter?,
+    override val info: ParameterInfo,
     val position: EnumPosition
-) : Parameter(name, propertySpec, setter) {
+) : Parameter() {
 
     companion object {
 
         /**
-         * Checks if an element is a subtype of enum
+         * Creates a new enum parameter
          */
-        fun isValidEnum(element: VariableElement): Boolean {
-            val elementType = element.asType() as? Type.ClassType
-            val superTypeName =
-                (elementType?.supertype_field?.asTypeName() as? ParameterizedTypeName)?.rawType
-            val enumTypeName = java.lang.Enum::class.java.asTypeName()
-            return superTypeName == enumTypeName
-        }
-
-        fun create(
-            element: VariableElement,
-            name: String,
-            propertySpec: PropertySpec,
-            setter: Setter?
-        ): Parameter {
-            if (!isValidEnum(element)) throw Throwable("Parameter $name type is not enum")
-
-            val enumerable = element.getAnnotation(Optional.Enumerable::class.java)
-            return EnumParameter(name, propertySpec, setter, enumerable.position)
+        fun create(info: ParameterInfo): EnumParameter {
+            if (!info.isEnum) throw Throwable("Parameter ${info.name} type is not enum")
+            val enumerable = info.varElement.getAnnotation(Optional.Enumerable::class.java)
+            return EnumParameter(info, enumerable?.position ?: EnumPosition.FIRST)
         }
     }
 
@@ -53,14 +31,14 @@ internal data class EnumParameter(
      * Builds a constructor parameter spec
      */
     override fun toCtrParamSpec(): ParameterSpec {
-        return ParameterSpec.builder(name, propertySpec.type, KModifier.PRIVATE).build()
+        return ParameterSpec.builder(name, info.spec.type, KModifier.PRIVATE).build()
     }
 
     /**
      * Builds a constructor parameter spec
      */
     override fun toPropertySpec(): PropertySpec {
-        return PropertySpec.builder(name, propertySpec.type)
+        return PropertySpec.builder(name, info.spec.type)
             .initializer(name)
             .mutable()
             .build()
@@ -78,8 +56,8 @@ internal data class EnumParameter(
      */
     override fun createInitializeStatement(): String {
         val initializer =
-            if (position == EnumPosition.FIRST) "val $name = ${propertySpec.type}.values()[0]"
-            else "val $name = ${propertySpec.type}.values()[${propertySpec.type}.values().count() - 1]"
+            if (position == EnumPosition.FIRST) "val $name = ${info.spec.type}.values()[0]"
+            else "val $name = ${info.spec.type}.values()[${info.spec.type}.values().count() - 1]"
         return initializer.wrapProof()
     }
 }

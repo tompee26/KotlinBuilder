@@ -1,75 +1,58 @@
 package com.tompee.kotlinbuilder.processor.parser
 
-import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.tompee.kotlinbuilder.annotations.Optional
-import com.tompee.kotlinbuilder.annotations.Setter
+import com.tompee.kotlinbuilder.processor.KBuilderElement
 import com.tompee.kotlinbuilder.processor.models.*
 import com.tompee.kotlinbuilder.processor.processor.ProviderMap
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
+import javax.lang.model.element.VariableElement
 
-@KotlinPoetMetadataPreview
+@OptIn(KotlinPoetMetadataPreview::class)
 internal class ParameterParser(private val providerFactory: ProviderParameter.Builder.Factory) {
 
-    fun parse(element: TypeElement, typeSpec: TypeSpec, providerMap: ProviderMap): List<Parameter> {
-        val kotlinCtr = typeSpec.primaryConstructor
-            ?: throw Throwable("No kotlin primary constructor defined")
-        val javaCtr = element.enclosedElements
-            .firstOrNull { it.kind == ElementKind.CONSTRUCTOR } as? ExecutableElement
-            ?: throw Throwable("No java constructor found.")
-
-        return kotlinCtr.parameters.zip(javaCtr.parameters) { kParam, jParam ->
-            val setter = jParam.getAnnotation(Setter::class.java)
-            val propertySpec = typeSpec.propertySpecs.find { it.name == kParam.name }!!
-
+    fun parse(kElement: KBuilderElement, providerMap: ProviderMap): List<Parameter> {
+        val parameters = kElement.metadata.constructors.first()
+            .valueParameters
+        return parameters.mapIndexed { index, valueParameter ->
+            val element = kElement.typeElement.findVariableElement(index, parameters.size)
+            val spec = kElement.typeSpec.propertySpecs.first { it.name == valueParameter.name }
+            val parameterInfo =
+                ParameterInfo(valueParameter, element, spec, element, kElement.types)
             when {
-                jParam.getAnnotation(Optional::class.java) != null -> {
-                    OptionalParameter.create(
-                        element = jParam,
-                        providerMap = providerMap,
-                        name = kParam.name,
-                        propertySpec = propertySpec,
-                        setter = setter
-                    )
+                element.findAnnotation<Optional>() != null -> {
+                    OptionalParameter.create(parameterInfo, providerMap)
                 }
-                jParam.getAnnotation(Optional.Default::class.java) != null -> {
-                    DefaultParameter.create(
-                        name = kParam.name,
-                        propertySpec = propertySpec,
-                        setter = setter
-                    )
+                element.findAnnotation<Optional.Default>() != null -> {
+                    DefaultParameter.create(parameterInfo)
                 }
-                jParam.getAnnotation(Optional.Enumerable::class.java) != null -> {
-                    EnumParameter.create(
-                        element = jParam,
-                        name = kParam.name,
-                        propertySpec = propertySpec,
-                        setter = setter
-                    )
+                element.findAnnotation<Optional.Enumerable>() != null -> {
+                    EnumParameter.create(parameterInfo)
                 }
-                jParam.getAnnotation(Optional.Nullable::class.java) != null -> {
-                    NullableParameter.create(
-                        name = kParam.name,
-                        propertySpec = propertySpec,
-                        setter = setter
-                    )
+                element.findAnnotation<Optional.Nullable>() != null -> {
+                    NullableParameter.create(parameterInfo)
                 }
-                jParam.getAnnotation(Optional.ValueProvider::class.java) != null -> {
-                    providerFactory.create(
-                        element = jParam,
-                        name = kParam.name,
-                        propertySpec = propertySpec,
-                        setter = setter
-                    ).build()
+                element.findAnnotation<Optional.ValueProvider>() != null -> {
+                    providerFactory.create(parameterInfo).build()
                 }
-                else -> MandatoryParameter.create(
-                    name = kParam.name,
-                    propertySpec = propertySpec,
-                    setter = setter
-                )
+                else -> {
+                    MandatoryParameter.create(parameterInfo)
+                }
             }
         }
+    }
+
+    private fun TypeElement.findVariableElement(index: Int, paramCount: Int): VariableElement {
+        val constructors = enclosedElements
+            .filter { it.kind == ElementKind.CONSTRUCTOR }
+            .filterIsInstance<ExecutableElement>()
+        // For now, we only count the number of arguments
+        return constructors.first { it.parameters.size == paramCount }.parameters[index]
+    }
+
+    private inline fun <reified T : Annotation> VariableElement.findAnnotation(): T? {
+        return getAnnotation(T::class.java)
     }
 }

@@ -13,7 +13,7 @@ data class Optional (
     val nullable: String?,
 
     @Optional
-    val enum : SampleEnum,
+    val enums : SampleEnum,
 
     @Optional
     val unit : Unit,

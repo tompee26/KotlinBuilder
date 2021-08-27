@@ -2,11 +2,8 @@ package com.tompee.kotlinbuilder.processor.models
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
-import com.tompee.kotlinbuilder.annotations.EnumPosition
-import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 import com.tompee.kotlinbuilder.processor.processor.ProviderMap
-import javax.lang.model.element.VariableElement
 
 /**
  * Represents an optional parameter in the target class constructor.
@@ -14,18 +11,12 @@ import javax.lang.model.element.VariableElement
  * 1. It is a nullable type
  * 2. It is an enum type
  * 3. It is a value type
- *
- * @property name actual parameter name
- * @property propertySpec property spec
- * @property setter optional setter name annotation
  */
 @KotlinPoetMetadataPreview
 internal data class OptionalParameter(
-    override val name: String,
-    override val propertySpec: PropertySpec,
-    override val setter: Setter?,
+    override val info: ParameterInfo,
     private val initializer: Initializer
-) : Parameter(name, propertySpec, setter) {
+) : Parameter() {
 
     class Initializer(private val initializer: () -> String) {
         fun get() = initializer()
@@ -52,42 +43,34 @@ internal data class OptionalParameter(
             MUTABLE_SET to Initializer { "mutableSetOf()" }
         )
 
-        fun create(
-            element: VariableElement,
-            providerMap: ProviderMap,
-            name: String,
-            propertySpec: PropertySpec,
-            setter: Setter?
-        ): Parameter {
+        fun create(info: ParameterInfo, providerMap: ProviderMap): Parameter {
 
             // Check if nullable
-            if (propertySpec.type.isNullable) {
-                return NullableParameter(name, propertySpec, setter)
+            if (info.isNullable) {
+                return NullableParameter.create(info)
             }
 
             // Check if enum
-            if (EnumParameter.isValidEnum(element)) {
-                return EnumParameter(name, propertySpec, setter, EnumPosition.FIRST)
+            if (info.isEnum) {
+                return EnumParameter.create(info)
             }
 
             // Check from value type mapping
-            val typeName = propertySpec.type.let {
+            val typeName = info.spec.type.let {
                 if (it is ParameterizedTypeName) it.rawType else it
             }
             val initializer = optionalValueTypeMap[typeName]
             if (initializer != null) {
-                return OptionalParameter(name, propertySpec, setter, initializer)
+                return OptionalParameter(info, initializer)
             }
 
             // Check from provider map
-            val info = providerMap[propertySpec.type]
-                ?: throw Throwable("Default value for parameter $name cannot be inferred")
+            val providerInfo = providerMap[info.spec.type]
+                ?: throw Throwable("Default value for parameter ${info.name} cannot be inferred")
             return ProviderParameter(
-                name,
-                propertySpec,
-                setter,
-                info.element.asType().asTypeName(),
-                info.typeSpec.kind == TypeSpec.Kind.OBJECT
+                info,
+                providerInfo.element.asType().asTypeName(),
+                providerInfo.typeSpec.kind == TypeSpec.Kind.OBJECT
             )
         }
     }
@@ -96,14 +79,14 @@ internal data class OptionalParameter(
      * Builds a constructor parameter spec
      */
     override fun toCtrParamSpec(): ParameterSpec {
-        return ParameterSpec.builder(name, propertySpec.type, KModifier.PRIVATE).build()
+        return ParameterSpec.builder(name, info.spec.type, KModifier.PRIVATE).build()
     }
 
     /**
      * Builds a constructor parameter spec
      */
     override fun toPropertySpec(): PropertySpec {
-        return PropertySpec.builder(name, propertySpec.type)
+        return PropertySpec.builder(name, info.spec.type)
             .initializer(name)
             .mutable()
             .build()
@@ -120,6 +103,6 @@ internal data class OptionalParameter(
      * Builds an invoke method initializer statement
      */
     override fun createInitializeStatement(): String {
-        return "val $name : ${propertySpec.type} = ${initializer.get()}".wrapProof()
+        return "val $name : ${info.spec.type} = ${initializer.get()}".wrapProof()
     }
 }

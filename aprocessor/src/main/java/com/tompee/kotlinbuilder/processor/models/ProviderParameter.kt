@@ -5,11 +5,9 @@ import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import com.tompee.kotlinbuilder.annotations.DefaultValueProvider
 import com.tompee.kotlinbuilder.annotations.Optional
-import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.KBuilderElement
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 import javax.lang.model.element.TypeElement
-import javax.lang.model.element.VariableElement
 import javax.lang.model.type.MirroredTypeException
 import javax.lang.model.type.TypeMirror
 
@@ -30,55 +28,37 @@ internal fun TypeSpec.getInterfaceType(): ParameterizedTypeName {
         ?: throw Throwable("$name is not a subclass of DefaultValueProvider")
 }
 
-
 /**
  * Represents an optional parameter with default value provider in the target class constructor.
- *
- * @property name actual parameter name
- * @property propertySpec property spec
- * @property setter optional setter name annotation
- * @property typeName provider type name information
  */
-@KotlinPoetMetadataPreview
+@OptIn(KotlinPoetMetadataPreview::class)
 internal data class ProviderParameter(
-    override val name: String,
-    override val propertySpec: PropertySpec,
-    override val setter: Setter?,
+    override val info: ParameterInfo,
     val typeName: TypeName,
     val isStatic: Boolean = false
-) : Parameter(name, propertySpec, setter) {
+) : Parameter() {
 
     class Builder(
-        private val properties: KBuilderElement,
-        private val element: VariableElement,
-        private val name: String,
-        private val propertySpec: PropertySpec,
-        private val setter: Setter?
+        private val kElement: KBuilderElement,
+        private val info: ParameterInfo
     ) {
 
-        class Factory(private val properties: KBuilderElement) {
+        class Factory(private val kElement: KBuilderElement) {
 
-            fun create(
-                element: VariableElement,
-                name: String,
-                propertySpec: PropertySpec,
-                setter: Setter?
-            ): Builder = Builder(properties, element, name, propertySpec, setter)
+            fun create(info: ParameterInfo): Builder = Builder(kElement, info)
         }
 
         fun build(): Parameter {
             val provider =
-                element.getAnnotation(Optional.ValueProvider::class.java).getProvider()
+                info.varElement.getAnnotation(Optional.ValueProvider::class.java).getProvider()
             val typeSpec =
-                (properties.types.asElement(provider) as TypeElement).toTypeSpec(properties.classInspector)
+                (kElement.types.asElement(provider) as TypeElement).toTypeSpec(kElement.classInspector)
             val providerType = typeSpec.getInterfaceType().typeArguments.first()
-            if (providerType != propertySpec.type) {
-                throw Throwable("Parameter $name type (${propertySpec.type}) is not the same as the ValueProvider type ($providerType)")
+            if (providerType != info.spec.type) {
+                throw Throwable("Parameter ${info.name} type (${info.spec.type}) is not the same as the ValueProvider type ($providerType)")
             }
             return ProviderParameter(
-                name,
-                propertySpec,
-                setter,
+                info,
                 provider.asTypeName(),
                 typeSpec.kind == TypeSpec.Kind.OBJECT
             )
@@ -89,14 +69,14 @@ internal data class ProviderParameter(
      * Builds a constructor parameter spec
      */
     override fun toCtrParamSpec(): ParameterSpec {
-        return ParameterSpec.builder(name, propertySpec.type.copy(true), KModifier.PRIVATE).build()
+        return ParameterSpec.builder(name, info.spec.type.copy(true), KModifier.PRIVATE).build()
     }
 
     /**
      * Builds a constructor parameter spec
      */
     override fun toPropertySpec(): PropertySpec {
-        return PropertySpec.builder(name, propertySpec.type.copy(true))
+        return PropertySpec.builder(name, info.spec.type.copy(true))
             .initializer(name)
             .mutable()
             .build()
@@ -113,7 +93,7 @@ internal data class ProviderParameter(
      * Builds an invoke method initializer statement
      */
     override fun createInitializeStatement(): String {
-        return "val $name : ${propertySpec.type.copy(true)} = null".wrapProof()
+        return "val $name : ${info.spec.type.copy(true)} = null".wrapProof()
     }
 
     /**

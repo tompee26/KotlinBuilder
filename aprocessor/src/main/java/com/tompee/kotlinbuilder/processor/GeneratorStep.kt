@@ -73,12 +73,8 @@ internal class GeneratorStep(
         val builderName = kElement.builderClassName
 
         val parameterParser = ParameterParser(ProviderParameter.Builder.Factory(kElement))
-        val parameterList =
-            parameterParser.parse(
-                kElement.typeElement,
-                kElement.typeSpec,
-                ProviderProcessor(kElement.classInspector).getProviderMap(providers)
-            )
+        val providerMap = ProviderProcessor(kElement.classInspector).getProviderMap(providers)
+        val parameterList = parameterParser.parse(kElement, providerMap)
 
         val classSpecBuilder = TypeSpec.classBuilder(builderName)
             .primaryConstructor(buildConstructor(parameterList))

@@ -3,30 +3,23 @@ package com.tompee.kotlinbuilder.processor.models
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
-import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 
 /**
  * Represents an optional nullable parameter in the target class constructor.
- *
- * @property name actual parameter name
- * @property propertySpec property spec
- * @property setter optional setter name annotation
  */
-internal data class NullableParameter(
-    override val name: String,
-    override val propertySpec: PropertySpec,
-    override val setter: Setter?
-) : Parameter(name, propertySpec, setter) {
+internal data class NullableParameter(override val info: ParameterInfo) : Parameter() {
 
     companion object {
 
-        fun create(name: String, propertySpec: PropertySpec, setter: Setter?): Parameter {
-            if (!propertySpec.type.isNullable) {
-                throw Throwable("Parameter $name is annotated with @Optional.Nullable but its type is not nullable. Actual type is ${propertySpec.type}")
+        /**
+         * Creates a new nullable parameter
+         */
+        fun create(info: ParameterInfo): NullableParameter {
+            if (!info.isNullable) {
+                throw Throwable("Parameter ${info.name} is annotated with @Optional.Nullable but its type is not nullable. Actual type is ${info.spec.type}")
             }
-
-            return NullableParameter(name, propertySpec, setter)
+            return NullableParameter(info)
         }
     }
 
@@ -34,15 +27,15 @@ internal data class NullableParameter(
      * Builds a constructor parameter spec
      */
     override fun toCtrParamSpec(): ParameterSpec {
-        return ParameterSpec.builder(name, propertySpec.type, KModifier.PRIVATE).build()
+        return ParameterSpec.builder(info.name, info.spec.type, KModifier.PRIVATE).build()
     }
 
     /**
      * Builds a constructor parameter spec
      */
     override fun toPropertySpec(): PropertySpec {
-        return PropertySpec.builder(name, propertySpec.type)
-            .initializer(name)
+        return PropertySpec.builder(info.name, info.spec.type)
+            .initializer(info.name)
             .mutable()
             .build()
     }
@@ -58,6 +51,6 @@ internal data class NullableParameter(
      * Builds an invoke method initializer statement
      */
     override fun createInitializeStatement(): String {
-        return "val $name : ${propertySpec.type} = null".wrapProof()
+        return "val ${info.name} : ${info.spec.type} = null".wrapProof()
     }
 }

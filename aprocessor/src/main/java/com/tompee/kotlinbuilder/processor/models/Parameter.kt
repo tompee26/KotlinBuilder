@@ -1,21 +1,22 @@
 package com.tompee.kotlinbuilder.processor.models
 
 import com.squareup.kotlinpoet.*
-import com.tompee.kotlinbuilder.annotations.Setter
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 
 /**
  * A class that represents a constructor parameter
- *
- * @property name actual parameter name
- * @property propertySpec property spec
- * @property setter optional setter name annotation
  */
-internal abstract class Parameter(
-    open val name: String,
-    open val propertySpec: PropertySpec,
-    open val setter: Setter?
-) {
+internal abstract class Parameter {
+
+    /**
+     * Parameter info
+     */
+    abstract val info: ParameterInfo
+
+    /**
+     * Parameter name
+     */
+    val name by lazy { info.name }
 
     /**
      * Builds a constructor parameter spec
@@ -46,13 +47,13 @@ internal abstract class Parameter(
      * Generates the builder method
      */
     fun toBuilderFunSpec(className: ClassName): FunSpec {
-        val name = setter?.name ?: name
+        val name = info.setter?.name ?: info.name
         val providerParamType =
-            LambdaTypeName.get(returnType = propertySpec.type)
+            LambdaTypeName.get(returnType = info.spec.type)
         return FunSpec.builder(name)
             .addParameter(ParameterSpec.builder("provider", providerParamType).build())
             .returns(className)
-            .addStatement("return apply { ${this@Parameter.name} = provider() }".wrapProof())
+            .addStatement("return apply { ${info.name} = provider() }".wrapProof())
             .build()
     }
 
