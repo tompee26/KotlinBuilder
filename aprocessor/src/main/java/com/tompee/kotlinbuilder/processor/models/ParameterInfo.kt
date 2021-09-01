@@ -10,7 +10,7 @@ import kotlinx.metadata.KmClassifier
 import javax.lang.model.element.VariableElement
 import javax.lang.model.util.Types
 
-@OptIn(KotlinPoetMetadataPreview::class)
+@KotlinPoetMetadataPreview
 internal class ParameterInfo(
     value: ImmutableKmValueParameter,
     val varElement: VariableElement,
@@ -28,7 +28,7 @@ internal class ParameterInfo(
     val metadata: ImmutableKmClass?
         get() {
             return try {
-                types.asElement(varElement.asType()).metadata.toImmutableKmClass()
+                types.asElement(varElement.asType()).metadata
             } catch (e: Exception) {
                 null
             }

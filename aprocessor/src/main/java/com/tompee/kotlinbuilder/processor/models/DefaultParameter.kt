@@ -3,12 +3,15 @@ package com.tompee.kotlinbuilder.processor.models
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 
 /**
  * Represents an optional default parameter in the target class constructor.
  */
-internal data class DefaultParameter(override val info: ParameterInfo) : Parameter() {
+@KotlinPoetMetadataPreview
+internal class DefaultParameter private constructor(override val info: ParameterInfo) :
+    Parameter() {
 
     companion object {
 
@@ -23,7 +26,6 @@ internal data class DefaultParameter(override val info: ParameterInfo) : Paramet
     override fun toCtrParamSpec(): ParameterSpec {
         return ParameterSpec.builder(name, info.typeName.copy(true), KModifier.PRIVATE).build()
     }
-
 
     /**
      * Builds a constructor parameter spec

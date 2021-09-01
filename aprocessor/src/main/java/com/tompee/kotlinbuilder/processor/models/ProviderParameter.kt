@@ -1,68 +1,72 @@
 package com.tompee.kotlinbuilder.processor.models
 
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.classinspector.elements.ElementsClassInspector
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
-import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
-import com.tompee.kotlinbuilder.annotations.DefaultValueProvider
 import com.tompee.kotlinbuilder.annotations.Optional
-import com.tompee.kotlinbuilder.processor.KBuilderElement
+import com.tompee.kotlinbuilder.processor.ProcessorException
 import com.tompee.kotlinbuilder.processor.extensions.className
+import com.tompee.kotlinbuilder.processor.extensions.isObject
+import com.tompee.kotlinbuilder.processor.extensions.parseAnnotation
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
+import com.tompee.kotlinbuilder.processor.processor.ProviderProcessor
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.MirroredTypeException
 import javax.lang.model.type.TypeMirror
-
-internal fun Optional.ValueProvider.getProvider(): TypeMirror {
-    try {
-        this.provider
-    } catch (mte: MirroredTypeException) {
-        return mte.typeMirror
-    }
-    throw Throwable("DefaultValueProvider type cannot be determined")
-}
-
-internal fun TypeSpec.getInterfaceType(): ParameterizedTypeName {
-    return superinterfaces
-        .map { it.key }
-        .filterIsInstance<ParameterizedTypeName>()
-        .find { it.rawType == DefaultValueProvider::class.asClassName() }
-        ?: throw Throwable("$name is not a subclass of DefaultValueProvider")
-}
+import javax.lang.model.util.Elements
+import javax.lang.model.util.Types
 
 /**
  * Represents an optional parameter with default value provider in the target class constructor.
  */
-@OptIn(KotlinPoetMetadataPreview::class)
-internal data class ProviderParameter(
+@KotlinPoetMetadataPreview
+internal class ProviderParameter private constructor(
     override val info: ParameterInfo,
-    val typeName: TypeName,
-    val isStatic: Boolean = false
+    private val providerName: TypeName,
+    private val isStatic: Boolean = false
 ) : Parameter() {
 
-    class Builder(
-        private val kElement: KBuilderElement,
-        private val info: ParameterInfo
-    ) {
+    companion object {
 
-        class Factory(private val kElement: KBuilderElement) {
-
-            fun create(info: ParameterInfo): Builder = Builder(kElement, info)
+        /**
+         * Creates a ProviderParameter deriving the value from the provider map
+         */
+        fun create(
+            info: ParameterInfo,
+            childTypeName: TypeName,
+            isStatic: Boolean
+        ): ProviderParameter {
+            return ProviderParameter(info, childTypeName, isStatic)
         }
 
-        fun build(): Parameter {
-            val provider =
-                info.varElement.getAnnotation(Optional.ValueProvider::class.java).getProvider()
-            val typeSpec =
-                (kElement.types.asElement(provider) as TypeElement).toTypeSpec(kElement.classInspector)
-            val providerType = typeSpec.getInterfaceType().typeArguments.first()
+        /**
+         * Creates a ProviderParameter deriving the value from the annotation
+         */
+        fun create(info: ParameterInfo, elements: Elements, types: Types): ProviderParameter {
+            val inspector = ElementsClassInspector.create(elements, types)
+            val element = info.varElement.parseAnnotation<Optional.ValueProvider>()?.getProvider()
+                ?.let { types.asElement(it) as? TypeElement }
+                ?: throw ProcessorException(
+                    info.varElement,
+                    "Missing @Optional.ValueProvider annotation"
+                )
+            val providerType = ProviderProcessor.getProviderType(element, inspector)
             if (providerType != info.typeName) {
                 throw Throwable("Parameter ${info.name} of type (${info.typeName}) is not the same as the ValueProvider type ($providerType)")
             }
-            return ProviderParameter(
-                info,
-                kElement.types.asElement(provider).className,
-                typeSpec.kind == TypeSpec.Kind.OBJECT
-            )
+            return ProviderParameter(info, element.className, element.isObject)
+        }
+
+        private fun Optional.ValueProvider.getProvider(): TypeMirror {
+            try {
+                this.provider
+            } catch (mte: MirroredTypeException) {
+                return mte.typeMirror
+            }
+            throw Throwable("DefaultValueProvider type cannot be determined")
         }
     }
 
@@ -101,7 +105,7 @@ internal data class ProviderParameter(
      * Creates a variable that will shadow the global that will contain the non-null initializer
      */
     override fun toBuildInitializer(): String {
-        return if (isStatic) "val $name = this.$name ?: $typeName.get()".wrapProof()
-        else "val $name = this.$name ?: $typeName().get()".wrapProof()
+        return if (isStatic) "val $name = this.$name ?: $providerName.get()".wrapProof()
+        else "val $name = this.$name ?: $providerName().get()".wrapProof()
     }
 }

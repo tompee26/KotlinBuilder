@@ -2,39 +2,47 @@ package com.tompee.kotlinbuilder.processor.parser
 
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.tompee.kotlinbuilder.annotations.Optional
-import com.tompee.kotlinbuilder.processor.KBuilderElement
+import com.tompee.kotlinbuilder.processor.extensions.metadata
+import com.tompee.kotlinbuilder.processor.extensions.parseAnnotation
 import com.tompee.kotlinbuilder.processor.models.*
 import com.tompee.kotlinbuilder.processor.processor.ProviderMap
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
 import javax.lang.model.element.VariableElement
+import javax.lang.model.util.Elements
+import javax.lang.model.util.Types
 
-@OptIn(KotlinPoetMetadataPreview::class)
-internal class ParameterParser(private val providerFactory: ProviderParameter.Builder.Factory) {
+@KotlinPoetMetadataPreview
+internal class ParameterParser(
+    private val providerMap: ProviderMap,
+    private val elements: Elements,
+    private val types: Types
+) {
 
-    fun parse(kElement: KBuilderElement, providerMap: ProviderMap): List<Parameter> {
-        val parameters = kElement.metadata.constructors.first()
+    fun parse(
+        element: TypeElement,
+    ): List<Parameter> {
+        val parameters = element.metadata.constructors.first()
             .valueParameters
         return parameters.mapIndexed { index, valueParameter ->
-            val element = kElement.typeElement.findVariableElement(index, parameters.size)
-            val parameterInfo =
-                ParameterInfo(valueParameter, element, kElement.types)
+            val varElement = element.findVariableElement(index, parameters.size)
+            val parameterInfo = ParameterInfo(valueParameter, varElement, types)
             when {
-                element.findAnnotation<Optional>() != null -> {
+                varElement.parseAnnotation<Optional>() != null -> {
                     OptionalParameter.create(parameterInfo, providerMap)
                 }
-                element.findAnnotation<Optional.Default>() != null -> {
+                varElement.parseAnnotation<Optional.Default>() != null -> {
                     DefaultParameter.create(parameterInfo)
                 }
-                element.findAnnotation<Optional.Enumerable>() != null -> {
+                varElement.parseAnnotation<Optional.Enumerable>() != null -> {
                     EnumParameter.create(parameterInfo)
                 }
-                element.findAnnotation<Optional.Nullable>() != null -> {
+                varElement.parseAnnotation<Optional.Nullable>() != null -> {
                     NullableParameter.create(parameterInfo)
                 }
-                element.findAnnotation<Optional.ValueProvider>() != null -> {
-                    providerFactory.create(parameterInfo).build()
+                varElement.parseAnnotation<Optional.ValueProvider>() != null -> {
+                    ProviderParameter.create(parameterInfo, elements, types)
                 }
                 else -> {
                     MandatoryParameter.create(parameterInfo)
@@ -49,9 +57,5 @@ internal class ParameterParser(private val providerFactory: ProviderParameter.Bu
             .filterIsInstance<ExecutableElement>()
         // For now, we only count the number of arguments
         return constructors.first { it.parameters.size == paramCount }.parameters[index]
-    }
-
-    private inline fun <reified T : Annotation> VariableElement.findAnnotation(): T? {
-        return getAnnotation(T::class.java)
     }
 }

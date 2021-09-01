@@ -3,13 +3,14 @@ package com.tompee.kotlinbuilder.processor.models
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 
 /**
  * Represents a mandatory parameter in the target class constructor.
  */
-internal data class MandatoryParameter(
-    override val info: ParameterInfo
-) : Parameter() {
+@KotlinPoetMetadataPreview
+internal class MandatoryParameter private constructor(override val info: ParameterInfo) :
+    Parameter() {
 
     companion object {
         fun create(info: ParameterInfo): Parameter {

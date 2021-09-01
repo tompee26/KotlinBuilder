@@ -1,7 +1,9 @@
 package com.tompee.kotlinbuilder.models
 
+import android.graphics.Bitmap
 import android.view.View
 import androidx.fragment.app.Fragment
+import com.tompee.kotlinbuilder.annotations.DefaultValueProvider
 import com.tompee.kotlinbuilder.annotations.KBuilder
 import com.tompee.kotlinbuilder.annotations.Optional
 import java.util.*
@@ -61,5 +63,13 @@ data class Optional (
     val set : Set<Locale>,
 
     @Optional
-    val mutableSet: MutableSet<Locale>
+    val mutableSet: MutableSet<Locale>,
+
+    @Optional
+    val listOfBitmap: List<Bitmap>
 )
+
+@Optional.Provides
+object BitmapListProvider : DefaultValueProvider<List<Bitmap>> {
+    override fun get(): List<Bitmap> = listOf(Bitmap.createBitmap(1, 1, Bitmap.Config.ALPHA_8))
+}

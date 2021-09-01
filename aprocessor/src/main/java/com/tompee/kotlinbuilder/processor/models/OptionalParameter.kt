@@ -3,8 +3,11 @@ package com.tompee.kotlinbuilder.processor.models
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.tompee.kotlinbuilder.processor.extensions.className
+import com.tompee.kotlinbuilder.processor.extensions.isObject
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 import com.tompee.kotlinbuilder.processor.processor.ProviderMap
+
+internal typealias Initializer = () -> String
 
 /**
  * Represents an optional parameter in the target class constructor.
@@ -14,37 +17,39 @@ import com.tompee.kotlinbuilder.processor.processor.ProviderMap
  * 3. It is a value type
  */
 @KotlinPoetMetadataPreview
-internal data class OptionalParameter(
+internal class OptionalParameter private constructor(
     override val info: ParameterInfo,
     private val initializer: Initializer
 ) : Parameter() {
 
-    class Initializer(private val initializer: () -> String) {
-        fun get() = initializer()
-    }
-
     companion object {
 
         private val optionalValueTypeMap = mapOf(
-            UNIT to Initializer { "Unit" },
-            BYTE to Initializer { "0" },
-            SHORT to Initializer { "0" },
-            INT to Initializer { "0" },
-            LONG to Initializer { "0L" },
-            FLOAT to Initializer { "0f" },
-            DOUBLE to Initializer { "0.0" },
-            BOOLEAN to Initializer { "false" },
-            STRING to Initializer { "\"\"" },
-            LIST to Initializer { "emptyList()" },
-            MUTABLE_LIST to Initializer { "mutableListOf()" },
-            MAP to Initializer { "emptyMap()" },
-            MUTABLE_MAP to Initializer { "mutableMapOf()" },
-            ARRAY to Initializer { "emptyArray()" },
-            SET to Initializer { "emptySet()" },
-            MUTABLE_SET to Initializer { "mutableSetOf()" }
+            UNIT to { "Unit" },
+            BYTE to { "0" },
+            SHORT to { "0" },
+            INT to { "0" },
+            LONG to { "0L" },
+            FLOAT to { "0f" },
+            DOUBLE to { "0.0" },
+            BOOLEAN to { "false" },
+            STRING to { "\"\"" },
+            LIST to { "emptyList()" },
+            MUTABLE_LIST to { "mutableListOf()" },
+            MAP to { "emptyMap()" },
+            MUTABLE_MAP to { "mutableMapOf()" },
+            ARRAY to { "emptyArray()" },
+            SET to { "emptySet()" },
+            MUTABLE_SET to { "mutableSetOf()" }
         )
 
         fun create(info: ParameterInfo, providerMap: ProviderMap): Parameter {
+
+            // Check from provider map
+            val element = providerMap[info.typeName]
+            if (element != null) {
+                return ProviderParameter.create(info, element.className, element.isObject)
+            }
 
             // Check if nullable
             if (info.isNullable) {
@@ -64,15 +69,7 @@ internal data class OptionalParameter(
             if (initializer != null) {
                 return OptionalParameter(info, initializer)
             }
-
-            // Check from provider map
-            val providerInfo = providerMap[info.typeName]
-                ?: throw Throwable("Default value for parameter ${info.name} cannot be inferred")
-            return ProviderParameter(
-                info,
-                providerInfo.element.className,
-                providerInfo.typeSpec.kind == TypeSpec.Kind.OBJECT
-            )
+            throw Throwable("Default value for parameter ${info.name} cannot be inferred")
         }
     }
 
@@ -104,6 +101,6 @@ internal data class OptionalParameter(
      * Builds an invoke method initializer statement
      */
     override fun createInitializeStatement(): String {
-        return "val $name : ${info.typeName} = ${initializer.get()}".wrapProof()
+        return "val $name : ${info.typeName} = ${initializer()}".wrapProof()
     }
 }

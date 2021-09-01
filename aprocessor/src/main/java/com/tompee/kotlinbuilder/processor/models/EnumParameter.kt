@@ -3,6 +3,7 @@ package com.tompee.kotlinbuilder.processor.models
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.tompee.kotlinbuilder.annotations.EnumPosition
 import com.tompee.kotlinbuilder.annotations.Optional
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
@@ -10,9 +11,10 @@ import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 /**
  * Represents an optional enum parameter
  */
-internal data class EnumParameter(
+@KotlinPoetMetadataPreview
+internal class EnumParameter private constructor(
     override val info: ParameterInfo,
-    val position: EnumPosition
+    private val position: EnumPosition
 ) : Parameter() {
 
     companion object {

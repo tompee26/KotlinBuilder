@@ -1,17 +1,19 @@
 package com.tompee.kotlinbuilder.processor.models
 
 import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.tompee.kotlinbuilder.processor.extensions.wrapProof
 
 /**
  * A class that represents a constructor parameter
  */
+@KotlinPoetMetadataPreview
 internal abstract class Parameter {
 
     /**
      * Parameter info
      */
-    abstract val info: ParameterInfo
+    protected abstract val info: ParameterInfo
 
     /**
      * Parameter name

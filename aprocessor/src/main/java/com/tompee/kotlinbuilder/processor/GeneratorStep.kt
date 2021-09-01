@@ -6,10 +6,9 @@ import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.tompee.kotlinbuilder.annotations.KBuilder
 import com.tompee.kotlinbuilder.annotations.Optional
-import com.tompee.kotlinbuilder.processor.extensions.wrapProof
+import com.tompee.kotlinbuilder.processor.extensions.*
 import com.tompee.kotlinbuilder.processor.models.DefaultParameter
 import com.tompee.kotlinbuilder.processor.models.Parameter
-import com.tompee.kotlinbuilder.processor.models.ProviderParameter
 import com.tompee.kotlinbuilder.processor.parser.ParameterParser
 import com.tompee.kotlinbuilder.processor.processor.ProviderProcessor
 import javax.annotation.Generated
@@ -30,6 +29,7 @@ internal class GeneratorStep(
 ) : BasicAnnotationProcessor.ProcessingStep {
 
     override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>): MutableSet<out Element> {
+
         val providers = elementsByAnnotation.entries()
             .filter { it.key == Optional.Provides::class.java }
             .map { it.value }
@@ -52,14 +52,26 @@ internal class GeneratorStep(
 
     private fun generate(element: TypeElement, providers: List<Element>) {
         try {
-            val kElement = KBuilderElement(element, elements, types)
-            val fileSpec = FileSpec.builder(
-                kElement.packageName,
-                kElement.builderClassName.toString()
-            )
-                .addType(buildClassSpec(kElement, providers))
+            val packageName = element.getPackageName(elements)
+            val builderName = element.parseAnnotation<KBuilder>()?.name?.let {
+                val builderName = if (it.isEmpty()) "${element.simpleName}Builder" else it
+                ClassName(packageName, builderName)
+            } ?: throw ProcessorException(element, "KBuilder annotation not found")
+
+            val fileSpec = FileSpec.builder(packageName, builderName.toString())
+                .addType(
+                    buildClassSpec(
+                        element,
+                        builderName,
+                        providers,
+                        elements,
+                        types
+                    )
+                )
                 .build()
             fileSpec.writeTo(filer)
+        } catch (e: ProcessorException) {
+            messager.printMessage(Diagnostic.Kind.ERROR, e.message, e.element)
         } catch (e: Throwable) {
             messager.printMessage(Diagnostic.Kind.ERROR, e.message, element)
         }
@@ -69,29 +81,35 @@ internal class GeneratorStep(
      * Builds the class spec. Also adds properties to be able to set constructor parameter's
      * modifier
      */
-    private fun buildClassSpec(kElement: KBuilderElement, providers: List<Element>): TypeSpec {
-        check(!kElement.isPrivate) { "${kElement.name} is a private class" }
-        val builderName = kElement.builderClassName
+    private fun buildClassSpec(
+        element: TypeElement,
+        builderName: ClassName,
+        providers: List<Element>,
+        elements: Elements,
+        types: Types
+    ): TypeSpec {
+        if (element.isPrivate) throw ProcessorException(element, "Class is defined as private")
 
-        val parameterParser = ParameterParser(ProviderParameter.Builder.Factory(kElement))
-        val providerMap = ProviderProcessor(kElement.classInspector).getProviderMap(providers)
-        val parameterList = parameterParser.parse(kElement, providerMap)
+        val providerMap = ProviderProcessor(elements, types).getProviderMap(providers)
+        val parameterParser = ParameterParser(providerMap, elements, types)
+        val parameterList = parameterParser.parse(element)
 
         val classSpecBuilder = TypeSpec.classBuilder(builderName)
+            .addOriginatingElement(element)
             .addAnnotation(generatedAnnotation())
             .primaryConstructor(buildConstructor(parameterList))
-            .addType(createCompanionObject(parameterList, kElement))
+            .addType(createCompanionObject(element, builderName, parameterList))
             .addProperties(parameterList.map { it.toPropertySpec() })
             .addFunctions(parameterList.map { it.toBuilderFunSpec(builderName) })
-            .addFunction(createBuildMethod(parameterList, kElement))
-        if (kElement.isInternal) classSpecBuilder.addModifiers(KModifier.INTERNAL)
+            .addFunction(createBuildMethod(element, parameterList))
+        if (element.isInternal) classSpecBuilder.addModifiers(KModifier.INTERNAL)
         return classSpecBuilder.build()
     }
 
     /**
      * Adds a Generated annotation to the class
      */
-    private fun generatedAnnotation() : AnnotationSpec {
+    private fun generatedAnnotation(): AnnotationSpec {
         return AnnotationSpec.builder(Generated::class.asClassName())
             .addMember("%S", BuilderProcessor::class.java.canonicalName)
             .addMember("comments = %S", "https://github.com/tompee26/KotlinBuilder")
@@ -112,21 +130,19 @@ internal class GeneratorStep(
      * Creates the companion object with a single build function that accepts the mandatory arguments
      */
     private fun createCompanionObject(
+        element: TypeElement,
+        builderName: ClassName,
         parameterList: List<Parameter>,
-        kElement: KBuilderElement
     ): TypeSpec {
         //region First invoke overload
         val createOverload = FunSpec.builder("invoke")
             .addModifiers(KModifier.INTERNAL, KModifier.OPERATOR, KModifier.INLINE)
-            .returns(kElement.className)
+            .returns(element.className)
             .addParameters(parameterList.filterNot { it.isOptional() }
                 .map { it.toInvokeParamSpec() })
             .addParameter(
                 "builderInit",
-                LambdaTypeName.get(
-                    kElement.builderClassName,
-                    returnType = Unit::class.java.asTypeName()
-                ),
+                LambdaTypeName.get(builderName, returnType = Unit::class.java.asTypeName()),
                 KModifier.CROSSINLINE
             )
 
@@ -135,7 +151,7 @@ internal class GeneratorStep(
 
         createOverload
             .addStatement(
-                "val builder = ${kElement.builderClassName}(${parameterList.joinToString(separator = ", ") { it.name }})".wrapProof()
+                "val builder = ${builderName}(${parameterList.joinToString(separator = ", ") { it.name }})".wrapProof()
             )
             .addStatement("builderInit(builder)".wrapProof())
             .addStatement("return builder.build()".wrapProof())
@@ -144,7 +160,7 @@ internal class GeneratorStep(
         // regionFirst invoke overload
         val builderOverload = FunSpec.builder("invoke")
             .addModifiers(KModifier.INTERNAL, KModifier.OPERATOR)
-            .returns(kElement.builderClassName)
+            .returns(builderName)
             .addParameters(parameterList.filterNot { it.isOptional() }
                 .map { it.toInvokeParamSpec() })
 
@@ -152,7 +168,7 @@ internal class GeneratorStep(
             .forEach { builderOverload.addStatement(it.createInitializeStatement()) }
 
         builderOverload.addStatement(
-            "return ${kElement.builderClassName}(${parameterList.joinToString(separator = ", ") { it.name }})".wrapProof()
+            "return ${builderName}(${parameterList.joinToString(separator = ", ") { it.name }})".wrapProof()
         )
         //endregion
 
@@ -166,11 +182,12 @@ internal class GeneratorStep(
      * Creates the build method
      */
     private fun createBuildMethod(
+        element: TypeElement,
         parameterList: List<Parameter>,
-        kElement: KBuilderElement
     ): FunSpec {
+        val className = element.className
         val builder = FunSpec.builder("build")
-            .returns(kElement.className)
+            .returns(className)
 
         /**
          * Add initializers
@@ -181,7 +198,7 @@ internal class GeneratorStep(
         val defaultParameters = parameterList.filterIsInstance<DefaultParameter>()
         if (defaultParameters.isEmpty()) {
             builder.addStatement(
-                "return ${kElement.className}(${
+                "return ${className}(${
                     parameterList.joinToString(
                         separator = ", "
                     ) { it.name }
@@ -201,11 +218,11 @@ internal class GeneratorStep(
                     ) { "${it.name} = ${it.name}" }
                     val defaultInitializer =
                         params.joinToString(separator = ", ") { "${it.name} = ${it.name}!!" }
-                    return@map "$condition -> ${kElement.className}($nonDefaultInitializer$defaultInitializer)"
+                    return@map "$condition -> ${className}($nonDefaultInitializer$defaultInitializer)"
                 }
                 .forEach { builder.addStatement(it.wrapProof()) }
             builder.addStatement(
-                "else -> ${kElement.className}(${nonDefaultParameters.joinToString(separator = ", ") { "${it.name} = ${it.name}" }})".wrapProof()
+                "else -> ${className}(${nonDefaultParameters.joinToString(separator = ", ") { "${it.name} = ${it.name}" }})".wrapProof()
             )
             builder.endControlFlow()
         }

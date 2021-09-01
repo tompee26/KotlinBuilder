@@ -1,24 +1,40 @@
 package com.tompee.kotlinbuilder.processor.processor
 
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.classinspector.elements.ElementsClassInspector
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.specs.ClassInspector
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
-import com.tompee.kotlinbuilder.processor.models.getInterfaceType
+import com.tompee.kotlinbuilder.annotations.DefaultValueProvider
 import javax.lang.model.element.Element
 import javax.lang.model.element.TypeElement
+import javax.lang.model.util.Elements
+import javax.lang.model.util.Types
 
-@OptIn(KotlinPoetMetadataPreview::class)
-internal typealias ProviderMap = Map<TypeName, ProviderProcessor.ProviderInfo>
+internal typealias ProviderMap = Map<TypeName, TypeElement>
 
 @KotlinPoetMetadataPreview
-internal class ProviderProcessor(private val classInspector: ClassInspector) {
+internal class ProviderProcessor(elements: Elements, types: Types) {
 
-    data class ProviderInfo(
-        val element: Element,
-        val typeSpec: TypeSpec
-    )
+    companion object {
+
+        fun getProviderType(element: TypeElement, inspector: ClassInspector): TypeName {
+            return element.toTypeSpec(inspector).getInterfaceType().typeArguments.first()
+        }
+
+        fun TypeSpec.getInterfaceType(): ParameterizedTypeName {
+            return superinterfaces
+                .map { it.key }
+                .filterIsInstance<ParameterizedTypeName>()
+                .find { it.rawType == DefaultValueProvider::class.asClassName() }
+                ?: throw Throwable("$name is not a subclass of DefaultValueProvider")
+        }
+    }
+
+    private val inspector = ElementsClassInspector.create(elements, types)
 
     /**
      * Returns the provider mapping. The provider mapping is a pair of the value type and the
@@ -26,11 +42,7 @@ internal class ProviderProcessor(private val classInspector: ClassInspector) {
      */
     fun getProviderMap(elements: List<Element>): ProviderMap {
         return elements.filterIsInstance<TypeElement>()
-            .map { it to it.toTypeSpec(classInspector) }
-            .mapNotNull { pair ->
-                val providerType = pair.second.getInterfaceType()
-                    .typeArguments.firstOrNull() ?: return@mapNotNull null
-                return@mapNotNull providerType to ProviderInfo(pair.first, pair.second)
-            }.toMap()
+            .map { element -> getProviderType(element, inspector) to element }
+            .toMap()
     }
 }
